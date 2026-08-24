@@ -1,0 +1,4 @@
+# Shell scripts must keep LF line endings on every platform — a CRLF-corrupted
+# shebang (`#!/usr/bin/env bash\r`) breaks execution on Git Bash / MINGW64,
+# which core.autocrlf=true (the common Windows Git default) would otherwise cause.
+*.sh text eol=lf
