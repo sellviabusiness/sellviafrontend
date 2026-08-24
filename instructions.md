@@ -9,8 +9,8 @@ The Sellvia project's central documentation is hosted at:
 
 This site is protected by Vercel deployment/bot protection. To access it:
 
-1. Read the bypass code from the `bypasscode` variable in `.env.local` (repository root). This file is git-ignored and must be populated locally — it is not committed.
-2. Send it on every request as the header `x-vercel-protection-bypass: <bypasscode>` (a query param `?x-vercel-protection-bypass=<bypasscode>&x-vercel-set-bypass-cookie=true` also works if headers cannot be set).
+1. Read the bypass code from the `VERCEL_AUTOMATION_BYPASS_SECRET` variable in `.env.local` (repository root). This file is git-ignored and must be populated locally — it is not committed.
+2. Send it on every request as the header `x-vercel-protection-bypass: <VERCEL_AUTOMATION_BYPASS_SECRET>` (a query param `?x-vercel-protection-bypass=<VERCEL_AUTOMATION_BYPASS_SECRET>&x-vercel-set-bypass-cookie=true` also works if headers cannot be set).
 3. If requests still return `403` with an `X-Vercel-Mitigated: challenge` response header, the bypass code is not the issue — that indicates Vercel's bot/attack-challenge firewall, which a static token cannot solve. Report this rather than assuming the code is wrong.
 
 Before starting any task, access and review the latest relevant documentation from the central Sellvia documentation system.
