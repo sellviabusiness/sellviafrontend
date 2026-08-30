@@ -33,9 +33,19 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+// Defaults to a div (unchanged) — Card shows up nested (inside a dialog that
+// already has its own DialogTitle, inside another heading's section, etc.)
+// where forcing a heading level would be wrong. Pass as="h1" (or h2/h3...)
+// when this Card *is* the page's title, so it actually lands in the
+// heading outline — screen readers navigate by heading, and a styled div
+// isn't one no matter how large the text.
+function CardTitle({
+  className,
+  as: Comp = "div",
+  ...props
+}: React.ComponentProps<"div"> & { as?: React.ElementType }) {
   return (
-    <div
+    <Comp
       data-slot="card-title"
       className={cn(
         "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
