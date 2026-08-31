@@ -1,27 +1,35 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-// Intrinsic size of public/logo.png — used to scale the rendered size without distorting the
-// artwork's actual proportions.
-//
-// LOGO SWAP (Playbook 10 §3): replaced with the new official wordmark (white "SellVia" text,
-// upward arrow standing in for the "L" — same identity as before, refined asset). Native size
-// updated to match the new file (was 205x70 for the old baked-in-black-box artwork).
-const NATIVE_WIDTH = 326;
-const NATIVE_HEIGHT = 87;
+// Intrinsic size of each logo asset — used to scale the rendered size without distorting the
+// artwork's actual proportions. The two files are NOT the same aspect ratio (the light wordmark's
+// lettering has different proportions than the dark one's), so each gets its own native size
+// rather than assuming they match.
+const DARK_NATIVE = { width: 326, height: 87 }; // public/logo.png — white text, transparent bg
+const LIGHT_NATIVE = { width: 326, height: 128 }; // public/logo-light.png — black text, transparent bg
 
 /**
- * The real SellVia logo (public/logo.png), rendered at its own aspect ratio — no cropping, no
- * circular mask, no recoloring.
+ * The real SellVia logo, theme-aware (Playbook 10 §3 follow-up — separate light/dark assets, not
+ * one asset forced onto both backgrounds).
  *
- * DARK CHIP WRAPPER (Playbook 10 §3): the new logo file is white artwork on a fully transparent
- * background — unlike the old asset, it doesn't carry its own dark backing, so on its own it goes
- * invisible against a light page (light is now the app-wide default, Playbook 10 §2). Wrapped in
- * a solid dark rounded chip here so the logo stays legible everywhere regardless of the current
- * page/theme background — this is CSS, not baked into the image, so it can't drift out of sync
- * with a future asset swap. `height` sizes the logo artwork itself; the chip's padding scales
- * proportionally so smaller/larger renders (topbar vs. auth card) stay visually consistent.
+ * - Dark mode: public/logo.png (white wordmark) — UNCHANGED from before, still wrapped in the
+ *   solid dark chip it already had, since the page background can't be assumed pure black
+ *   everywhere the logo appears.
+ * - Light mode: public/logo-light.png (black wordmark, the exact attached asset — not recreated)
+ *   — rendered directly with no chip. It's black-on-transparent, already clearly visible against
+ *   a light page on its own; wrapping it in a chip would be a visual change the request didn't
+ *   ask for.
+ *
+ * Hydration: next-themes only knows the real theme after mount (the server can't read the
+ * client's stored preference). Renders the light asset — the app's own default theme — until
+ * mounted, then swaps to whichever `resolvedTheme` actually says, matching next-themes' own
+ * documented pattern for theme-dependent UI. No layout shift either way: both branches render at
+ * the same `height`, only the source/wrapper differs.
  */
 export function SellViaLogo({
   className,
@@ -37,27 +45,61 @@ export function SellViaLogo({
    *  the marketing placeholder. */
   href?: string;
 }) {
-  const width = Math.round((NATIVE_WIDTH / NATIVE_HEIGHT) * height);
-  const paddingX = Math.round(height * 0.45);
-  const paddingY = Math.round(height * 0.32);
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // Mount-detection for the theme-dependent asset swap below — same "client-only state, can't
+    // know it during SSR" pattern this app already uses throughout (see any dashboard view's own
+    // localStorage-read effect).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
-  const chip = (
-    <span
-      className={cn("inline-flex items-center justify-center rounded-[var(--radius-sm)] bg-[#0A0A0A]", className)}
-      style={{ paddingLeft: paddingX, paddingRight: paddingX, paddingTop: paddingY, paddingBottom: paddingY }}
-    >
-      <Image src="/logo.png" alt="SellVia" width={width} height={height} className="h-auto w-auto" priority />
-    </span>
+  const isDark = mounted && resolvedTheme === "dark";
+  const native = isDark ? DARK_NATIVE : LIGHT_NATIVE;
+  const width = Math.round((native.width / native.height) * height);
+
+  const img = (
+    <Image
+      src={isDark ? "/logo.png" : "/logo-light.png"}
+      alt="SellVia"
+      width={width}
+      height={height}
+      // No h-auto/w-auto here on purpose: that class previously let the browser fall back to
+      // the loaded resource's own natural pixel size instead of these explicit width/height —
+      // since next/image picks a different srcset resource per asset, that made light and dark
+      // render at two different visual sizes even at the same `height` prop. Explicit width/height
+      // (already computed above from each asset's real native aspect ratio) is what must govern
+      // render size so both themes match.
+      style={{ height, width, display: "block" }}
+      priority
+    />
   );
 
-  if (!asLink) return chip;
+  const mark = isDark ? (
+    <span
+      className={cn("inline-flex items-center justify-center rounded-[var(--radius-sm)] bg-[#0A0A0A]", className)}
+      style={{
+        paddingLeft: Math.round(height * 0.45),
+        paddingRight: Math.round(height * 0.45),
+        paddingTop: Math.round(height * 0.32),
+        paddingBottom: Math.round(height * 0.32),
+      }}
+    >
+      {img}
+    </span>
+  ) : (
+    <span className={cn("inline-flex items-center justify-center", className)}>{img}</span>
+  );
+
+  if (!asLink) return mark;
 
   return (
     <Link
       href={href}
       className="inline-flex rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      {chip}
+      {mark}
     </Link>
   );
 }

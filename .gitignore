@@ -17,6 +17,10 @@
 /.next/
 /out/
 
+# dev-only shared mock store (Playbook 09) — genuinely shared across browser profiles via a
+# server-side JSON file, deliberately never committed
+/.mock-data/
+
 # production
 /build
 
