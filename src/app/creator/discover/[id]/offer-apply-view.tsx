@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle2, ImageOff } from "lucide-react";
 import { Card } from "@/components/reference/ui/card";
 import { Button } from "@/components/reference/ui/button";
 import { Alert } from "@/components/reference/ui/alert";
@@ -70,14 +70,27 @@ export function OfferApplyView({ email, offerId }: { email: string; offerId: str
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Discover
       </Link>
 
-      <Card className="p-6">
-        <h1 className="font-[family-name:var(--font-heading)] text-xl font-semibold text-foreground">{offer.productName}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{offer.category} · {offer.productType}</p>
-        <div className="mt-3 flex items-center gap-4 text-sm">
-          <span className="text-foreground">{formatCurrency(offer.price)}</span>
-          <span className="text-muted-foreground-2">{offer.commissionRate}% commission</span>
+      <Card className="overflow-hidden p-0">
+        <div className="h-64 w-full bg-foreground/5">
+          {offer.imageDataUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={offer.imageDataUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-muted-foreground-2">
+              <ImageOff className="h-5 w-5" aria-hidden="true" />
+              <span className="text-xs">No image</span>
+            </div>
+          )}
         </div>
-        {offer.description && <p className="mt-4 text-sm text-muted-foreground">{offer.description}</p>}
+        <div className="p-6">
+          <h1 className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-foreground">{offer.productName}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{offer.category} · {offer.productType}</p>
+          <div className="mt-4 flex items-center gap-3">
+            <span className="font-[family-name:var(--font-heading)] text-xl font-semibold text-foreground">{formatCurrency(offer.price)}</span>
+            <span className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent-foreground">{offer.commissionRate}% commission</span>
+          </div>
+          {offer.description && <p className="mt-4 text-sm text-muted-foreground">{offer.description}</p>}
+        </div>
       </Card>
 
       {profile && (

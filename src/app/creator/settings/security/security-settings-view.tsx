@@ -6,6 +6,8 @@ import { ArrowLeft, Monitor } from "lucide-react";
 import { Card } from "@/components/reference/ui/card";
 import { Button } from "@/components/reference/ui/button";
 import { AuthFlowForm } from "@/components/auth/auth-flow-form";
+import { ClerkSecurityForm } from "@/components/auth/clerk/clerk-security-form";
+import { isMockMode } from "@/lib/auth/config";
 
 /** E10 — same B5/D12 MFA/password flow and mock active-sessions treatment as Merchant Settings
  *  → Security, embedded here rather than rebuilt. See components/merchant/settings/security's
@@ -50,7 +52,7 @@ export function SecuritySettingsView() {
       </Card>
 
       <Card className="p-6">
-        <AuthFlowForm kind="settings" allowFreshSettings />
+        {isMockMode ? <AuthFlowForm kind="settings" allowFreshSettings /> : <ClerkSecurityForm />}
       </Card>
     </div>
   );

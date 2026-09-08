@@ -24,12 +24,12 @@ export function CreatorAppShell({
   }, [email]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-screen flex-col bg-background">
       <CreatorTopbar email={email} fullName={fullName} roles={roles} onMenuClick={() => setMobileNavOpen(true)} />
       <CreatorMobileNav open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         <CreatorSidebar />
-        <main className="flex-1 overflow-x-hidden p-4 sm:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

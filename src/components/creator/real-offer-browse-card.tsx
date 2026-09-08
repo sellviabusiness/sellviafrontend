@@ -5,30 +5,23 @@ import { StatusBadge } from "@/components/reference/ui/status-badge";
 import { buttonVariants } from "@/components/reference/ui/button";
 import { formatCurrency } from "@/lib/merchant/format";
 import { cn } from "@/lib/utils";
-import type { Offer } from "@/lib/merchant/types";
+import type { RealOffer } from "@/lib/merchant/types";
 
 /**
- * E2's browse card — read-only (no pause/resume/etc., that's merchant-only). "Already applied"
- * is real, computed from this creator's own applications, not a placeholder.
- *
- * Apply button: this session's own explicit instruction — every card must show a visible Apply
- * affordance directly in the grid, not just on the detail page. It navigates to the detail page
- * (`/creator/discover/:id`) rather than applying inline, since that page already owns the real
- * apply mutation (applyToOfferAsCreator) — one call site for that write, not two; the detail page
- * also surfaces the audience/offer terms and the real self-dealing/duplicate-application errors
- * before the write happens, which a one-click inline apply from the grid would skip.
- *
- * Structurally: two sibling `<Link>`s (image+details, and the Apply button), not one nested
- * inside the other — nested `<a>` tags are invalid HTML and browsers un-nest them unpredictably.
+ * Real-mode counterpart to offer-browse-card.tsx. "Already applied" is real now (backend shipped
+ * a creator-scoped GET /applications/mine, 2026-09-06) — computed from this creator's own
+ * applications, same as the mock. Every card still opens through the detail page rather than
+ * applying inline, same reasoning as the mock: one real mutation call site, and the real
+ * SELF_DEALING_BLOCKED/APPLICATION_ALREADY_EXISTS errors surface there before the write happens.
  */
-export function OfferBrowseCard({ offer, alreadyApplied }: { offer: Offer; alreadyApplied: boolean }) {
+export function RealOfferBrowseCard({ offer, alreadyApplied }: { offer: RealOffer; alreadyApplied: boolean }) {
   return (
     <Card className="flex h-full flex-col overflow-hidden p-0 transition-colors hover:border-border-hover">
       <Link href={`/creator/discover/${offer.id}`} className="flex flex-1 flex-col gap-3">
         <div className="relative h-44 w-full shrink-0 bg-foreground/5">
-          {offer.imageDataUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={offer.imageDataUrl} alt={offer.productName} className="h-full w-full object-cover" />
+          {offer.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- external Shopify CDN URL
+            <img src={offer.imageUrl} alt={offer.name} className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-muted-foreground-2">
               <ImageOff className="h-5 w-5" aria-hidden="true" />
@@ -42,10 +35,10 @@ export function OfferBrowseCard({ offer, alreadyApplied }: { offer: Offer; alrea
           )}
         </div>
         <div className="flex flex-1 flex-col gap-3 px-5 pt-0">
-          <h3 className="line-clamp-1 font-[family-name:var(--font-heading)] text-base font-semibold text-foreground">{offer.productName}</h3>
-          <p className="text-sm text-muted-foreground">{offer.category}</p>
+          <h3 className="line-clamp-1 font-[family-name:var(--font-heading)] text-base font-semibold text-foreground">{offer.name}</h3>
+          <p className="text-sm capitalize text-muted-foreground">{offer.category}</p>
           <div className="mt-auto flex items-center justify-between text-sm">
-            <span className="text-foreground">{formatCurrency(offer.price)}</span>
+            <span className="text-foreground">{formatCurrency(offer.priceCents / 100)}</span>
             <span className="text-muted-foreground-2">{offer.commissionRate}% commission</span>
           </div>
         </div>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { DeleteAccountView } from "@/components/account/delete-account-view";
 
-export const metadata = { title: "Delete account — SellVia" };
+export const metadata = { title: "Delete account" };
 
 export default async function CreatorDeleteAccountPage() {
   const session = await getServerSession();
@@ -17,7 +17,7 @@ export default async function CreatorDeleteAccountPage() {
       </Link>
       <div>
         <h1 className="font-[family-name:var(--font-heading)] text-xl font-semibold text-foreground">Delete account</h1>
-        <p className="text-sm text-muted-foreground">Deleting your account ends both Creator and Merchant access, not just this one.</p>
+        <p className="text-sm text-muted-foreground">Deleting your account ends all account access, not just this page.</p>
       </div>
       <DeleteAccountView email={session.email} roles={session.roles} />
     </div>
