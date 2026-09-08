@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/auth/session";
 import { RegisterView } from "./register-view";
 
-export const metadata = { title: "Create account — SellVia" };
+export const metadata = { title: "Create account" };
 
 export default async function RegisterPage() {
   const session = await getServerSession();

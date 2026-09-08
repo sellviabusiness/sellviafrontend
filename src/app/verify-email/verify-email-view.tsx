@@ -6,10 +6,12 @@ import { AuthLayout } from "@/components/auth/auth-layout";
 import { AuthCard } from "@/components/auth/auth-card";
 import { AuthHeader } from "@/components/auth/auth-header";
 import { AuthFlowForm } from "@/components/auth/auth-flow-form";
+import { ClerkVerifyEmailForm } from "@/components/auth/clerk/clerk-verify-email-form";
 import { AuthFooter } from "@/components/auth/auth-footer";
 import { AuthLink } from "@/components/auth/auth-link";
 import { Alert } from "@/components/reference/ui/alert";
 import { Button } from "@/components/reference/ui/button";
+import { isMockMode } from "@/lib/auth/config";
 import type { AnyFlow } from "@/lib/auth/types";
 
 export function VerifyEmailView() {
@@ -17,6 +19,20 @@ export function VerifyEmailView() {
   const [flowState, setFlowState] = useState<string | null>(null);
 
   const sentAlready = flowState === "sent_email";
+
+  if (!isMockMode) {
+    return (
+      <AuthLayout>
+        <AuthCard>
+          <AuthHeader heading="Verify your email" subheading="Enter the code we sent you." />
+          <ClerkVerifyEmailForm />
+        </AuthCard>
+        <AuthFooter>
+          <AuthLink href="/login" emphasis>Back to login</AuthLink>
+        </AuthFooter>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout>

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/auth/session";
 import { ForgotPasswordView } from "./forgot-password-view";
 
-export const metadata = { title: "Reset your password — SellVia" };
+export const metadata = { title: "Reset your password" };
 
 export default async function ForgotPasswordPage() {
   const session = await getServerSession();

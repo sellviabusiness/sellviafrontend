@@ -1,4 +1,4 @@
-import type { UiNode, UiNodeGroupEnum, UiNodeInputAttributesTypeEnum, UiText } from "@ory/client";
+import type { UiNode, UiNodeGroup, UiText } from "../ui-flow-types";
 
 let nextMessageId = 1;
 
@@ -9,8 +9,8 @@ export function uiText(text: string, type: UiText["type"] = "info"): UiText {
 /** Builds a Kratos-shaped UiNode for a visible/hidden form field. */
 export function inputNode(opts: {
   name: string;
-  type?: UiNodeInputAttributesTypeEnum;
-  group?: UiNodeGroupEnum;
+  type?: string;
+  group?: UiNodeGroup;
   label?: string;
   required?: boolean;
   value?: string | boolean;
@@ -51,7 +51,7 @@ export function submitNode(opts: {
   name?: string;
   value: string;
   label: string;
-  group?: UiNodeGroupEnum;
+  group?: UiNodeGroup;
 }): UiNode {
   const { name = "method", value, label, group = "default" } = opts;
   return {
@@ -72,7 +72,7 @@ export function submitNode(opts: {
 }
 
 /** Plain informational text node (Kratos uses these for e.g. a TOTP secret to scan/enter) — B5. */
-export function textNode(text: string, group: UiNodeGroupEnum = "default"): UiNode {
+export function textNode(text: string, group: UiNodeGroup = "default"): UiNode {
   return {
     type: "text",
     group,
@@ -86,7 +86,7 @@ export function textNode(text: string, group: UiNodeGroupEnum = "default"): UiNo
   };
 }
 
-export function hiddenNode(name: string, value: string, group: UiNodeGroupEnum = "default"): UiNode {
+export function hiddenNode(name: string, value: string, group: UiNodeGroup = "default"): UiNode {
   return {
     type: "input",
     group,

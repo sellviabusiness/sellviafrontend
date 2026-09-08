@@ -6,17 +6,32 @@ import { AuthLayout } from "@/components/auth/auth-layout";
 import { AuthCard } from "@/components/auth/auth-card";
 import { AuthHeader } from "@/components/auth/auth-header";
 import { AuthFlowForm } from "@/components/auth/auth-flow-form";
+import { ClerkResetPasswordForm } from "@/components/auth/clerk/clerk-reset-password-form";
 import { AuthFooter } from "@/components/auth/auth-footer";
 import { AuthLink } from "@/components/auth/auth-link";
 import { PasswordInput } from "@/components/reference/ui/password-input";
 import { Alert } from "@/components/reference/ui/alert";
 import { Button } from "@/components/reference/ui/button";
-import { authProvider } from "@/lib/auth/provider";
+import { isMockMode } from "@/lib/auth/config";
 
 export function ResetPasswordView() {
   const router = useRouter();
   const [confirmValue, setConfirmValue] = useState("");
   const [mismatch, setMismatch] = useState(false);
+
+  if (!isMockMode) {
+    return (
+      <AuthLayout>
+        <AuthCard>
+          <AuthHeader heading="Set a new password" subheading="Enter your new password below." />
+          <ClerkResetPasswordForm />
+        </AuthCard>
+        <AuthFooter>
+          <AuthLink href="/login" emphasis>Back to login</AuthLink>
+        </AuthFooter>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout>
@@ -64,30 +79,20 @@ export function ResetPasswordView() {
                   <Alert variant="success">Your password has been updated.</Alert>
                   {/*
                     B3 — task's own instruction: don't state this as fact unless it's actually
-                    true. It isn't, uniformly:
-
-                    - kratos mode: real Kratos's *documented default* is to revoke every other
-                      active session on a credential change (Docs/Security/Session Management
-                      cites this too). True *if* the connected instance still has that default —
-                      unverified here, this app has no way to confirm a specific Kratos
-                      project's config. Flagged in the audit report as needing backend/infra
-                      confirmation, not assumed.
-                    - mock mode: definitively NOT true, not just unverified. The mock has no
-                      server-side session store at all (see mock/session-cookie.ts) — "session"
-                      is a single plain cookie this browser trusts, nothing tracks or could
-                      invalidate a *different* browser/device's copy. Claiming otherwise here
-                      would be exactly the false-copy-over-real-behavior the task warned against.
+                    true. This branch only ever renders in mock mode now (the clerk-mode version
+                    of this screen is ClerkResetPasswordForm, returned above before this code
+                    runs at all, and its own copy of this same claim is genuinely true — Clerk's
+                    resetPasswordEmailCode.submitPassword is called with
+                    signOutOfOtherSessions: true). The mock has no server-side session store at
+                    all (see mock/session-cookie.ts) — "session" is a single plain cookie this
+                    browser trusts, nothing tracks or could invalidate a *different*
+                    browser/device's copy, so claiming otherwise here would be exactly the
+                    false-copy-over-real-behavior the task warned against.
                   */}
-                  {authProvider.mode === "kratos" ? (
-                    <Alert variant="info">
-                      For your security, you&apos;ve been logged out of all other devices/sessions.
-                    </Alert>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      (Dev mode note: this demo auth doesn&apos;t track other sessions/devices, so
-                      nothing was actually signed out elsewhere — see the audit report.)
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    (Dev mode note: this demo auth doesn&apos;t track other sessions/devices, so
+                    nothing was actually signed out elsewhere — see the audit report.)
+                  </p>
                   <Button className="w-full" onClick={() => router.push("/dashboard")}>
                     Continue
                   </Button>

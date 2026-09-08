@@ -1,4 +1,4 @@
-import type { UiContainer, UiNode, UiText } from "@ory/client";
+import type { UiContainer, UiNode, UiText } from "./ui-flow-types";
 
 /** The subset every flow type (Login/Registration/Recovery/Verification/Settings) shares. */
 export interface FlowLike {

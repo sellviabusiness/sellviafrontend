@@ -1,12 +1,12 @@
-import { AUTH_MODE } from "./config";
-import { kratosProvider } from "./kratos/provider";
 import { mockProvider } from "./mock/provider";
 import type { AuthProvider } from "./types";
 
 /**
- * The single seam every client component goes through for auth (AuthFlowForm, LogoutButton).
- * Which implementation this is comes from one env var (NEXT_PUBLIC_AUTH_PROVIDER, defaults to
- * "mock" — see lib/auth/config.ts). Nothing that imports `authProvider` needs to change when
- * that flips to "kratos" against a real environment.
+ * The seam every mock-mode auth screen goes through (AuthFlowForm, the dashboard LogoutButton,
+ * complete-view's provider call). Always the mock provider now — Clerk (the real
+ * provider, lib/auth/config.ts) doesn't implement this interface at all (no "flow" concept, see
+ * lib/auth/types.ts's AuthProvider doc comment), so every screen that used to call
+ * `authProvider.*` unconditionally now branches on `isMockMode` first and calls into
+ * components/auth/clerk/ or lib/auth/clerk/ instead when it's false.
  */
-export const authProvider: AuthProvider = AUTH_MODE === "kratos" ? kratosProvider : mockProvider;
+export const authProvider: AuthProvider = mockProvider;

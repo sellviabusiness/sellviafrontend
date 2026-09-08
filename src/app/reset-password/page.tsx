@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { ResetPasswordView } from "./reset-password-view";
 
-export const metadata = { title: "Set a new password — SellVia" };
+export const metadata = { title: "Set a new password" };
 
 // No server-side "already authenticated → redirect" check here: arriving with a valid
 // ?flow= is itself only possible via a fresh, privileged Kratos redirect (Docs/Security/

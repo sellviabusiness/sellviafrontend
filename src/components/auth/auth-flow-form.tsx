@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type SubmitEvent, type ReactNode } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import type { Session, UiNode, UiNodeInputAttributes } from "@ory/client";
+import type { Session, UiNode, UiNodeInputAttributes } from "@/lib/auth/ui-flow-types";
 import { KeyRound, Mail } from "lucide-react";
 import { authProvider } from "@/lib/auth/provider";
 import { classifyAuthError } from "@/lib/auth/errors";
@@ -64,9 +64,7 @@ export function AuthFlowForm({
   const formId = useId();
 
   const [flow, setFlow] = useState<AnyFlow | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "submitting" | "unreachable" | "not-configured">(
-    authProvider.isConfigured() ? "loading" : "not-configured",
-  );
+  const [status, setStatus] = useState<"loading" | "ready" | "submitting" | "unreachable">("loading");
   const [bannerError, setBannerError] = useState<string | null>(null);
   // B4 — true only for classifyAuthError's "expired" kind specifically (a dead flow/link/code),
   // not any other failure. Drives the "Request a new one" action below — distinct from a wrong
@@ -81,7 +79,7 @@ export function AuthFlowForm({
   const missingSettingsToken = kind === "settings" && !flowIdParam && !allowFreshSettings;
 
   useEffect(() => {
-    if (!authProvider.isConfigured() || missingSettingsToken) return;
+    if (missingSettingsToken) return;
 
     const flowId = flowIdParam;
     if (loadedFlowId.current === (flowId ?? "new")) return;
@@ -193,15 +191,6 @@ export function AuthFlowForm({
     setBannerError(null);
     loadedFlowId.current = null;
     router.replace(pathname);
-  }
-
-  if (status === "not-configured") {
-    return (
-      <Alert variant="error">
-        Sign-in isn&apos;t configured yet — <code>NEXT_PUBLIC_ORY_KRATOS_URL</code> is missing.
-        Set it in <code>.env.local</code> and restart the dev server.
-      </Alert>
-    );
   }
 
   if (missingSettingsToken) {

@@ -1,5 +1,5 @@
 import type { AnyFlow, AuthProvider, FlowKind, UpdateFlowResult } from "../types";
-import type { Identity, Session, UiContainer } from "@ory/client";
+import type { Identity, Session, UiContainer } from "../ui-flow-types";
 import { AuthRequestError } from "../errors";
 import { hiddenNode, inputNode, submitNode, textNode, uiText, withFieldError, withValues } from "./nodes";
 import * as userStore from "./user-store";
@@ -373,7 +373,21 @@ function updateRegistration(record: FlowRecord, body: Record<string, unknown>): 
   if (!email) fail("traits.email", "This field is required.");
   if (!password) fail("password", "This field is required.");
   if (password.length < MIN_PASSWORD_LENGTH) {
-    fail("password", `Password must be at least ${MIN_PASSWORD_LENGTH} characters. (Mock rule — the real policy is enforced by Kratos.)`);
+    fail("password", `Password must be at least ${MIN_PASSWORD_LENGTH} characters. (Mock rule — the real policy is enforced by the live provider.)`);
+  }
+  // AUDIT FIX — RoleSelector renders its radio group as `extraFields` (register-view.tsx), not
+  // one of this flow's own `ui.nodes`, so `fail()`'s field-error attachment (which only touches
+  // a node matching `fieldName`) can't surface an error against it — there's no node to attach
+  // to. This used to mean nothing here checked `roles.length` at all: registration silently
+  // succeeded with `roles: []` even though the field is marked required (red `*`) in the UI.
+  // Same message-banner pattern updateLogin already uses for its own non-field-specific failure.
+  if (roles.length === 0) {
+    const nodes = withValues(registrationNodes(), { "traits.email": email });
+    const flow = {
+      ...record.flow,
+      ui: container(nodes, [uiText("Choose whether you're joining as a Merchant or Creator.", "error")]),
+    };
+    throw new AuthRequestError(400, flow);
   }
   if (userStore.findUser(email)) {
     fail("traits.email", "An account with this email already exists.");
@@ -593,19 +607,6 @@ export const mockProvider: AuthProvider = {
     clearMockSessionCookie();
   },
 
-  async updateRoles(email: string, roles: string[]) {
-    userStore.setRoles(email, roles);
-    const user = userStore.findUser(email);
-    if (user) {
-      setMockSessionCookie({
-        id: user.id,
-        email: user.email,
-        verified: user.verified,
-        roles: user.roles,
-        onboardingComplete: user.onboardingComplete,
-      });
-    }
-  },
   async markOnboardingComplete(email: string) {
     userStore.setOnboardingComplete(email, true);
     const user = userStore.findUser(email);

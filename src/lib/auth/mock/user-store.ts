@@ -60,7 +60,7 @@ const DEMO_USER: MockUser = {
  * is — a dev-only account, not a real invite/grant flow (there isn't one, and building one is
  * out of scope for a single flat MVP admin role, per Operations/Admin Panel's own Open Question).
  * `onboardingComplete: true` deliberately — Feature 2's onboarding flow has nothing for an
- * admin-only session to fill in (its role-select step only offers merchant/creator), so this
+ * admin-only session to fill in (it's built entirely around merchant/creator roles), so this
  * account skips it entirely rather than being forced through a flow that doesn't apply to it.
  */
 const ADMIN_USER: MockUser = {
@@ -141,12 +141,6 @@ export function setPassword(email: string, password: string) {
 /** B5: toggled from /account/security's TOTP enroll/disable submit. */
 export function setMfaEnabled(email: string, enabled: boolean) {
   writeAll(readAll().map((u) => (u.email.toLowerCase() === email.toLowerCase() ? { ...u, mfaEnabled: enabled } : u)));
-}
-
-/** Feature 2 — role confirm/adjust step (C1) writes here via AuthProvider.updateRoles, not
- *  directly — see provider.ts. */
-export function setRoles(email: string, roles: string[]) {
-  writeAll(readAll().map((u) => (u.email.toLowerCase() === email.toLowerCase() ? { ...u, roles } : u)));
 }
 
 /** Feature 2 — via AuthProvider.markOnboardingComplete, not called directly outside provider.ts. */

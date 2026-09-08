@@ -4,8 +4,10 @@ import { AuthLayout } from "@/components/auth/auth-layout";
 import { AuthCard } from "@/components/auth/auth-card";
 import { AuthHeader } from "@/components/auth/auth-header";
 import { AuthFlowForm } from "@/components/auth/auth-flow-form";
+import { ClerkSecurityForm } from "@/components/auth/clerk/clerk-security-form";
 import { AuthFooter } from "@/components/auth/auth-footer";
 import { AuthLink } from "@/components/auth/auth-link";
+import { isMockMode } from "@/lib/auth/config";
 
 // B5's own stated policy — optional/Creator, recommended/Merchant, strongly
 // recommended (not yet a hard requirement)/Admin. Same wording as the old
@@ -43,7 +45,7 @@ export function SecurityView({ roles }: { roles: string[] }) {
           through /forgot-password before. Same generic AuthFlowForm as everywhere else — the
           TOTP enroll/disable nodes it renders come entirely from what the provider returns.
         */}
-        <AuthFlowForm kind="settings" allowFreshSettings />
+        {isMockMode ? <AuthFlowForm kind="settings" allowFreshSettings /> : <ClerkSecurityForm />}
       </AuthCard>
 
       <AuthFooter>
