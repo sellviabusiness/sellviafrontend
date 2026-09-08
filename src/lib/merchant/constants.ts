@@ -15,9 +15,15 @@ export const OFFER_CATEGORIES = [
 export const MIN_COMMISSION = 10;
 export const MAX_COMMISSION = 40;
 
-/** Flat platform-fee rate applied to every sale — see Sale.platformFee's doc comment in types.ts
- *  for why this is a flagged placeholder, not a confirmed number. */
-export const PLATFORM_FEE_RATE = 0.05;
+/**
+ * Real, confirmed rates (direct product decision, 2026-09-06) — replaces the earlier flat 5%
+ * placeholder this file shipped with. Platform takes 1% from EACH side of a sale, not one 5% cut
+ * from the merchant alone: 1% of the sale amount, billed to the merchant on top of the
+ * commission they owe; 1% of the commission itself, deducted from what the creator is paid. No
+ * minimum or maximum on the underlying sale/commission amount either side.
+ */
+export const MERCHANT_PLATFORM_FEE_RATE = 0.01;
+export const CREATOR_PLATFORM_FEE_RATE = 0.01;
 
 /** Canonical public tracking-link origin — see D4/D2's "auto-generated tracking link" requirement. */
 export const TRACKING_LINK_ORIGIN = "https://sellvia.com/products";

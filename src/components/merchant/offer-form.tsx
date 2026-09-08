@@ -7,7 +7,6 @@ import { Select } from "@/components/reference/ui/select";
 import { Textarea } from "@/components/reference/ui/textarea";
 import { FormErrorText } from "@/components/reference/ui/form-error-text";
 import { Button } from "@/components/reference/ui/button";
-import { CopyAssistButton } from "@/components/ai/copy-assist-button";
 import { ImageDropzone } from "./image-dropzone";
 import { OFFER_CATEGORIES, MIN_COMMISSION, MAX_COMMISSION } from "@/lib/merchant/constants";
 import type { NewOfferInput } from "@/lib/merchant/store";
@@ -230,10 +229,9 @@ export function OfferForm({
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-2">
           <Label htmlFor="description" required>Description</Label>
-          <CopyAssistButton
-            context={{ field: "offer_description", prompt: `${values.productName || "this product"} — category: ${values.category || "general"}` }}
-            onDraft={(text) => set("description", text)}
-          />
+          {/* GATED OFF — backend confirmed (PLAYBOOK.md) there is no ai_services module at all
+              yet (copy-assist is post-MVP): POST /ai/copy-assist doesn't exist, so this button
+              would fail on every single click. Re-enable once that endpoint ships. */}
         </div>
         <Textarea
           id="description"

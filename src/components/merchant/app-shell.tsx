@@ -31,12 +31,12 @@ export function MerchantAppShell({
   }, [email]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-screen flex-col bg-background">
       <MerchantTopbar email={email} fullName={fullName} roles={roles} onMenuClick={() => setMobileNavOpen(true)} />
       <MerchantMobileNav open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         <MerchantSidebar />
-        <main className="flex-1 overflow-x-hidden p-4 sm:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

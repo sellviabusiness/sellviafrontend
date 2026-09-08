@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Megaphone, ClipboardList, Receipt, CreditCard, X } from "lucide-react";
+import { LayoutGrid, Megaphone, ClipboardList, Receipt, CreditCard, Settings, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const SETTINGS_HREF = "/merchant/settings";
+
 /**
- * Playbook 04 §2a's rail, renamed Campaigns -> Offers + Billing added — Settings/Notifications
- * stay reachable from the topbar account menu, not this rail.
+ * Playbook 04 §2a's rail, renamed Campaigns -> Offers + Billing added — Settings moved here
+ * (bottom-pinned, own item below) from the topbar account menu; Notifications stays in the
+ * topbar (the bell).
  *
  * "Payouts" removed (this session's audit, prompted by the A1-A4 build): it was never in the
  * original D1-D12 list, its route was a permanent "content pending" placeholder, and the data
@@ -55,11 +58,93 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-/** Desktop rail — unchanged shape/routes, `sm`+ only. */
+/** Bottom-pinned Settings entry, labeled variant — used by the mobile drawer, appended after the
+ *  regular nav list with `mt-auto` pushing it to the bottom of the drawer. */
+function SettingsNavLink({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
+  const active = pathname === SETTINGS_HREF || pathname.startsWith(`${SETTINGS_HREF}/`);
+  return (
+    <Link
+      href={SETTINGS_HREF}
+      onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "mt-auto flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium transition-colors",
+        active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
+      )}
+    >
+      <Settings className="h-4 w-4" aria-hidden="true" />
+      Settings
+    </Link>
+  );
+}
+
+/** Bottom-pinned Settings entry, icon-only variant — same tooltip treatment as RailLinks' items. */
+function SettingsRailLink() {
+  const pathname = usePathname();
+  const active = pathname === SETTINGS_HREF || pathname.startsWith(`${SETTINGS_HREF}/`);
+  return (
+    <Link
+      href={SETTINGS_HREF}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "group relative mt-auto flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] transition-colors",
+        active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-foreground/10 hover:text-foreground",
+      )}
+    >
+      <Settings className="h-5 w-5" aria-hidden="true" />
+      <span className="sr-only">Settings</span>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute left-full z-20 ml-2 whitespace-nowrap rounded-[var(--radius-sm)] bg-foreground px-2.5 py-1.5 text-xs font-medium text-background opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+      >
+        Settings
+      </span>
+    </Link>
+  );
+}
+
+/** Icon-only rail (Pinterest-style) — each item is a centered icon in a rounded square, with its
+ *  label as a floating tooltip that only appears on hover/focus (`group`/`group-hover`, no JS or
+ *  extra dependency needed). The labeled list stays in the mobile drawer (NavLinks, unchanged) —
+ *  this is the desktop rail's own rendering. */
+function RailLinks() {
+  const pathname = usePathname();
+  return (
+    <>
+      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        const active = pathname === href || pathname.startsWith(`${href}/`);
+        return (
+          <Link
+            key={href}
+            href={href}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "group relative flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] transition-colors",
+              active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-foreground/10 hover:text-foreground",
+            )}
+          >
+            <Icon className="h-5 w-5" aria-hidden="true" />
+            <span className="sr-only">{label}</span>
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute left-full z-20 ml-2 whitespace-nowrap rounded-[var(--radius-sm)] bg-foreground px-2.5 py-1.5 text-xs font-medium text-background opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+            >
+              {label}
+            </span>
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
+/** Desktop rail — icon-only (Pinterest-style), `sm`+ only. */
 export function MerchantSidebar() {
   return (
-    <nav aria-label="Merchant navigation" className="hidden w-56 shrink-0 flex-col gap-1 border-r border-border p-4 sm:flex">
-      <NavLinks />
+    <nav aria-label="Merchant navigation" className="hidden w-16 shrink-0 flex-col items-center gap-1 border-r border-border py-4 sm:flex">
+      <RailLinks />
+      <SettingsRailLink />
     </nav>
   );
 }
@@ -105,6 +190,7 @@ export function MerchantMobileNav({ open, onClose }: { open: boolean; onClose: (
           </button>
         </div>
         <NavLinks onNavigate={onClose} />
+        <SettingsNavLink onNavigate={onClose} />
       </nav>
     </div>
   );

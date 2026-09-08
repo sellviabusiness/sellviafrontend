@@ -1,9 +1,11 @@
 import { Suspense } from "react";
 import { getServerSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
+import { isMockMode } from "@/lib/auth/config";
 import { ApplicationsView } from "./applications-view";
+import { RealApplicationsView } from "./real-applications-view";
 
-export const metadata = { title: "Applications — SellVia" };
+export const metadata = { title: "Applications" };
 
 export default async function ApplicationsPage() {
   const session = await getServerSession();
@@ -11,7 +13,7 @@ export default async function ApplicationsPage() {
 
   return (
     <Suspense>
-      <ApplicationsView email={session.email} />
+      {isMockMode ? <ApplicationsView email={session.email} /> : <RealApplicationsView />}
     </Suspense>
   );
 }

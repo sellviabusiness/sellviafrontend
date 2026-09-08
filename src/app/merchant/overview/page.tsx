@@ -1,9 +1,11 @@
 import { getServerSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { isOnboardingComplete } from "@/lib/onboarding/status";
+import { isMockMode } from "@/lib/auth/config";
 import { OverviewView } from "./overview-view";
+import { RealOverviewView } from "./real-overview-view";
 
-export const metadata = { title: "Overview — SellVia" };
+export const metadata = { title: "Overview" };
 
 export default async function MerchantOverviewPage() {
   const session = await getServerSession();
@@ -14,5 +16,9 @@ export default async function MerchantOverviewPage() {
   // signal to react to, not a permanently-false prop.
   const onboardingComplete = await isOnboardingComplete(session);
 
-  return <OverviewView email={session.email} onboardingComplete={onboardingComplete} />;
+  return isMockMode ? (
+    <OverviewView email={session.email} onboardingComplete={onboardingComplete} />
+  ) : (
+    <RealOverviewView email={session.email} onboardingComplete={onboardingComplete} />
+  );
 }

@@ -39,6 +39,80 @@ export interface Offer {
   clicks: number;
 }
 
+/**
+ * The REAL Offer shape (API-ENDPOINTS.md, 2026-09-05) — deliberately a separate type from `Offer`
+ * above rather than a reconciled superset: the two don't just differ by a few fields, they model
+ * different things. Mock `Offer` generates its own shareable tracking link at creation and has no
+ * concept of an external product page; real offers have no offer-level link at all (only a
+ * creator's own AffiliateLink, created on application approval, is ever shareable) and instead
+ * point at `productUrl`. Mock has description/image/shipping fields with no real backend home;
+ * real has `publishedAt`/`updatedAt` the mock never tracked. Forcing one shared type would mean
+ * every field on it is a lie in one mode or the other — see real-store.ts and the real-mode view
+ * components (real-offers-view.tsx etc.) for where this type is actually used, fully separate
+ * from the mock views built around `Offer`.
+ */
+export type RealOfferStatus = "draft" | "pending_vetting" | "live" | "paused" | "ended";
+
+export interface RealOffer {
+  id: string;
+  merchantProfileId: string;
+  name: string;
+  priceCents: number;
+  currency: string;
+  category: ProductType;
+  commissionRate: number;
+  productUrl: string;
+  /** Persisted (backend added it, 2026-09-06, b2a7520) — populated from prefill at creation,
+   *  never re-fetched/re-validated server-side, same trust level as productUrl itself. */
+  imageUrl: string | null;
+  status: RealOfferStatus;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * The REAL Application shape (API-ENDPOINTS.md, 2026-09-06 — the creatorX fields shipped in
+ * response to this app's own ask, "let a merchant see who actually applied": ApplicationRead
+ * originally had nothing but an opaque creatorProfileId). Snapshotted once at submission time
+ * (same pattern as AffiliateLink.lockedCommissionRate), not a live join — what a merchant judged
+ * the applicant on when reviewing, not whatever the creator's profile says today. `creatorName`
+ * is nullable for real reasons (some legacy User rows have no `name` set), not an oversight —
+ * always guard for it, never assume it's there. No `rejectionReason` field: reject takes no
+ * request body at all in the real contract, unlike the mock's free-text reason.
+ */
+export type RealApplicationStatus = "pending" | "approved" | "rejected";
+
+export interface RealApplication {
+  id: string;
+  offerId: string;
+  creatorProfileId: string;
+  status: RealApplicationStatus;
+  audienceSnippet?: string;
+  creatorName: string | null;
+  creatorNiche: string | null;
+  creatorAudienceSize: number;
+  creatorEngagementRate: number | null;
+  creatorPlatform: string | null;
+  creatorHandle: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** `GET /affiliate-links` (creator-only) — own links only, created only as a side effect of
+ *  application approval, no create endpoint at all. `slug` is what `/go/{slug}` (served by the
+ *  backend directly, not `/api/v1`) resolves. */
+export interface RealAffiliateLink {
+  id: string;
+  applicationId: string;
+  offerId: string;
+  slug: string;
+  discountCode: string;
+  lockedCommissionRate: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type CreatorPlatform = "instagram" | "tiktok" | "youtube" | "other";
 
 /** Fixed demo roster — not random/placeholder text, per instruction. Shared, not merchant-owned
@@ -106,14 +180,32 @@ export interface Sale {
   offerId: string;
   creatorId: string;
   amount: number;
+  /** What the merchant owes the creator — amount × offer.commissionRate, before either side's
+   *  platform fee. */
   commissionAmount: number;
-  /**
-   * SellVia's own cut, distinct from the creator's commission — unverified against Commission
-   * Engine (unreachable), modeled as a flat 5% of `amount` so the receipt has somewhere real to
-   * show a platform fee line rather than omitting it; swap for the real formula once confirmed.
-   */
+  /** SellVia's cut from the merchant's side — 1% of `amount` (MERCHANT_PLATFORM_FEE_RATE,
+   *  constants.ts), billed to the merchant on top of `commissionAmount`. Confirmed real rate,
+   *  2026-09-06 — no longer the earlier flat-5%-merchant-only placeholder. */
+  merchantPlatformFee: number;
+  /** SellVia's cut from the creator's side — 1% of `commissionAmount` (CREATOR_PLATFORM_FEE_RATE),
+   *  deducted from what the creator is actually paid. New field; the mock previously paid
+   *  creators their full commission with no fee taken at all. */
+  creatorPlatformFee: number;
+  /** Combined platform revenue from this sale (merchantPlatformFee + creatorPlatformFee) — what
+   *  admin P&L sums; both streams count as platform revenue regardless of which side paid it. */
   platformFee: number;
+  /**
+   * What the merchant is actually billed for this sale (commissionAmount + merchantPlatformFee),
+   * collected via the monthly billing cycle — a LIABILITY, not a residual. Despite the name
+   * (kept for continuity with every existing display/export), this isn't money left over for the
+   * merchant to "keep": SellVia never touches `amount` at all — the merchant already collected
+   * the full sale amount directly through their own Shopify checkout. This is what they owe on
+   * top of it, not what's left after a cut.
+   */
   merchantAmount: number;
+  /** What the creator actually receives for this sale (commissionAmount − creatorPlatformFee) —
+   *  the real net payout amount, distinct from the gross commissionAmount above. */
+  creatorPayout: number;
   status: SaleStatus;
   acceptanceStatus: SaleAcceptanceStatus;
   billingCycleId?: string;
@@ -158,6 +250,116 @@ export interface BillingCycle {
   status: BillingCycleStatus;
   totalOwed: number;
   retryCount: number;
+}
+
+/**
+ * Real Sale/BillingCycle/RefundRequest shapes (API-ENDPOINTS.md) — separate from the mock's
+ * `Sale`/`BillingCycle` above for the same reason `RealOffer`/`RealApplication` are: not a
+ * reconciled superset, a genuinely different shape. Notably `RealSale` has no `offerId` or
+ * creator info at all (only `affiliateLinkId`, unresolvable — no merchant-facing endpoint maps
+ * it back to an offer/creator; ask sent) and no per-sale fee breakdown (only the raw amount —
+ * commission/platform-fee math only exists in aggregate, at the billing-cycle level).
+ */
+export type RealSaleStatus = "reported" | "accepted" | "rejected" | "billed" | "refunded";
+
+export interface RealSale {
+  id: string;
+  affiliateLinkId: string;
+  merchantProfileId: string;
+  externalOrderId: string;
+  amountCents: number;
+  currency: string;
+  status: RealSaleStatus;
+  billingCycleId: string | null;
+  createdAt: string;
+}
+
+export type RealBillingCycleStatus = "open" | "pending_charge" | "charged" | "failed" | "retrying" | "suspended";
+
+export interface RealBillingCycle {
+  id: string;
+  periodStart: string;
+  periodEnd: string;
+  amountCents: number;
+  currency: string;
+  status: RealBillingCycleStatus;
+  swichInvoiceId: string | null;
+  failedAttempts: number;
+}
+
+export type RealRefundRequestStatus = "pending" | "approved" | "denied";
+
+export interface RealRefundRequest {
+  id: string;
+  saleId: string;
+  merchantProfileId: string;
+  requestedAmountCents: number;
+  status: RealRefundRequestStatus;
+  resolvedByAdminId: string | null;
+  resolutionNote: string | null;
+  billingCreditId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Real Payout/payout-method shapes (API-ENDPOINTS.md) — no threshold at all in the real model
+ * (2026-08-28 founder decision reversed the mock's $50/PKR-threshold design entirely): monthly
+ * cadence, full balance, no partial cashout. `RealPayoutMethodValue` uses the backend's own
+ * enum (`bank_transfer`, not the mock's `"bank"` shorthand) — raw account/IBAN/wallet numbers
+ * are sent but never stored anywhere in SellVia's own database (forwarded to Swich, discarded).
+ */
+export type RealPayoutStatus = "pending" | "processing" | "paid" | "failed";
+
+export interface RealPayout {
+  id: string;
+  creatorProfileId: string;
+  amountCents: number;
+  currency: string;
+  status: RealPayoutStatus;
+  swichPayoutId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type RealPayoutMethodValue = "bank_transfer" | "jazzcash" | "easypaisa";
+
+export interface RealPayoutMethodState {
+  payoutMethod: RealPayoutMethodValue | null;
+  connected: boolean;
+}
+
+export interface UpdateRealPayoutMethodInput {
+  method: RealPayoutMethodValue;
+  bankAccountName?: string;
+  bankAccountNumber?: string;
+  bankName?: string;
+  mobileWalletNumber?: string;
+  mobileWalletAccountName?: string;
+}
+
+/**
+ * Real dashboard aggregates (API-ENDPOINTS.md) — much coarser than the mock's OverviewStats/
+ * OverviewTrends: no time series, no per-offer stats, no activity feed, no month-over-month
+ * trend deltas. This is genuinely all either endpoint returns today — not a partial read, the
+ * real v1 dashboard.
+ */
+export interface RealMerchantDashboard {
+  offersTotal: number;
+  offersLive: number;
+  clicksTotal: number;
+  salesAcceptedTotal: number;
+  conversionRate: number;
+  amountBilledCents: number;
+}
+
+export interface RealCreatorDashboard {
+  linksTotal: number;
+  clicksTotal: number;
+  salesAttributedTotal: number;
+  walletBalanceCents: number;
+  lifetimePaidOutCents: number;
+  hasPayoutThisPeriod: boolean;
 }
 
 export type PayoutRequestStatus = "processing" | "paid";

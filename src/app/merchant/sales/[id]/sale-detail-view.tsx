@@ -74,17 +74,25 @@ export function SaleDetailView({ email, saleId }: { email: string; saleId: strin
         <StatusBadge tone={ACCEPTANCE_TONE[sale.acceptanceStatus]}>{sale.acceptanceStatus}</StatusBadge>
       </div>
 
+      {/* ROOT CAUSE FOUND LIVE — this receipt used to model money flowing *through* SellVia to
+          the merchant ("You keep" = amount − commission − fee), which never matched the real
+          design: the merchant already collects the full sale amount directly via their own
+          Shopify checkout, and SellVia never touches it. What SellVia actually does is bill the
+          merchant separately, once a month, for the commission owed plus its own 1% cut — a
+          liability, not a residual split of this one sale. Relabeled to match: "Sale amount" is
+          now clearly informational (already in the merchant's account), and the bottom line is
+          what gets billed, not what's "kept." */}
       <Card className="divide-y divide-border p-0">
         <Row label="Creator" value={creator?.name ?? "—"} />
-        <Row label="Sale amount" value={formatCurrency(sale.amount)} />
-        <Row label="Creator commission" value={`− ${formatCurrency(sale.commissionAmount)}`} muted />
-        <Row label="Platform fee" value={`− ${formatCurrency(sale.platformFee)}`} muted />
-        <Row label="You keep" value={formatCurrency(sale.merchantAmount)} strong />
+        <Row label="Sale amount (already yours via Shopify)" value={formatCurrency(sale.amount)} />
+        <Row label="Creator commission" value={formatCurrency(sale.commissionAmount)} muted />
+        <Row label="Platform fee (1% of sale)" value={formatCurrency(sale.merchantPlatformFee)} muted />
+        <Row label="You're billed" value={formatCurrency(sale.merchantAmount)} strong />
       </Card>
 
       <Card className="p-5">
         <p className="text-xs font-medium text-muted-foreground">Billing cycle</p>
-        <Link href="/merchant/billing" className="text-sm text-accent underline underline-offset-2">
+        <Link href="/merchant/billing" className="text-sm text-accent-foreground underline underline-offset-2">
           {cycleId.replace("cycle_", "")}
         </Link>
       </Card>

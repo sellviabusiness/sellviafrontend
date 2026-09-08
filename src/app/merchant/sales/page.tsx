@@ -1,9 +1,11 @@
 import { Suspense } from "react";
 import { getServerSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
+import { isMockMode } from "@/lib/auth/config";
 import { SalesView } from "./sales-view";
+import { RealSalesView } from "./real-sales-view";
 
-export const metadata = { title: "Sales — SellVia" };
+export const metadata = { title: "Sales" };
 
 export default async function SalesPage() {
   const session = await getServerSession();
@@ -11,7 +13,7 @@ export default async function SalesPage() {
 
   return (
     <Suspense>
-      <SalesView email={session.email} />
+      {isMockMode ? <SalesView email={session.email} /> : <RealSalesView />}
     </Suspense>
   );
 }

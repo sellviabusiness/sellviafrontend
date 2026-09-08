@@ -79,11 +79,11 @@ export function OfferDetailView({ email, offerId }: { email: string; offerId: st
     <div className="space-y-6">
       {!billingConnected && (
         <div className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-accent/30 bg-accent/10 px-4 py-3 text-sm">
-          <AlertTriangle className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+          <AlertTriangle className="h-4 w-4 shrink-0 text-accent-foreground" aria-hidden="true" />
           <span className="flex-1 text-foreground">
             Billing isn&apos;t connected — commission on new sales can&apos;t be collected until it is.
           </span>
-          <Link href="/merchant/settings/billing" className="font-medium text-accent underline underline-offset-2">
+          <Link href="/merchant/settings/billing" className="font-medium text-accent-foreground underline underline-offset-2">
             Connect billing
           </Link>
         </div>
@@ -142,7 +142,7 @@ export function OfferDetailView({ email, offerId }: { email: string; offerId: st
           <p className="text-sm font-medium text-foreground">Applications</p>
           <p className="mt-1 text-2xl font-semibold text-foreground">{stats?.applications ?? 0}</p>
           <p className="text-xs text-muted-foreground-2">{stats?.approvedCreators ?? 0} approved creator(s)</p>
-          <Link href={`/merchant/applications?offerId=${offerId}`} className="mt-2 inline-block text-xs text-accent underline underline-offset-2">
+          <Link href={`/merchant/applications?offerId=${offerId}`} className="mt-2 inline-block text-xs text-accent-foreground underline underline-offset-2">
             View applications
           </Link>
         </Card>
@@ -150,7 +150,7 @@ export function OfferDetailView({ email, offerId }: { email: string; offerId: st
           <p className="text-sm font-medium text-foreground">Sales</p>
           <p className="mt-1 text-2xl font-semibold text-foreground">{formatCurrency(stats?.totalSales ?? 0)}</p>
           <p className="text-xs text-muted-foreground-2">{stats ? formatCurrency(stats.spend) : "—"} commission owed</p>
-          <Link href={`/merchant/sales?offerId=${offerId}`} className="mt-2 inline-block text-xs text-accent underline underline-offset-2">
+          <Link href={`/merchant/sales?offerId=${offerId}`} className="mt-2 inline-block text-xs text-accent-foreground underline underline-offset-2">
             View sales
           </Link>
         </Card>

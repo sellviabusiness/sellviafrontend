@@ -9,7 +9,7 @@ import type {
 } from "./types";
 import { getMockCreator } from "./mock-creators";
 import { slugify } from "./format";
-import { PLATFORM_FEE_RATE, TRACKING_LINK_ORIGIN, REFUND_CREDIT_MONTHLY_CAP } from "./constants";
+import { MERCHANT_PLATFORM_FEE_RATE, CREATOR_PLATFORM_FEE_RATE, TRACKING_LINK_ORIGIN, REFUND_CREDIT_MONTHLY_CAP } from "./constants";
 import {
   notifyOfferPublished,
   notifyApplicationReceived,
@@ -327,7 +327,9 @@ export async function getOfferStats(email: string, offerId: string) {
     clicks,
     conversionRate: clicks > 0 ? (sales.length / clicks) * 100 : 0,
     totalSales: sales.reduce((sum, s) => sum + s.amount, 0),
-    spend: sales.reduce((sum, s) => sum + s.commissionAmount, 0),
+    // merchantAmount, not commissionAmount — "spend" means what the merchant is actually billed
+    // for (commission + their own 1% platform fee), not just the creator's cut alone.
+    spend: sales.reduce((sum, s) => sum + s.merchantAmount, 0),
     applications: record.applications.filter((a) => a.offerId === offerId).length,
     approvedCreators: record.applications.filter((a) => a.offerId === offerId && a.status === "approved").length,
   };
@@ -452,7 +454,7 @@ export async function approveApplication(email: string, applicationId: string): 
   await saveRecord(email, record);
   if (updated?.creatorEmail) {
     const offer = record.offers.find((o) => o.id === updated!.offerId);
-    notifyApplicationApproved(updated.creatorEmail, applicationId, offer?.productName ?? "an offer");
+    notifyApplicationApproved(updated.creatorEmail, offer?.productName ?? "an offer");
   }
   return updated;
 }
@@ -489,10 +491,14 @@ export async function getSale(email: string, saleId: string): Promise<Sale | und
 }
 
 /** Simulates a purchase through an approved creator's link (no real checkout/attribution — see
- *  recordOfferClick's doc comment for the same real-backend gap). Commission math: creator
- *  commission = amount × offer.commissionRate; platform fee = amount × PLATFORM_FEE_RATE
- *  (flagged placeholder, constants.ts); merchant keeps the rest. Only allowed against an approved
- *  application, matching the real rule that a Sale always belongs to an AffiliateLink. */
+ *  recordOfferClick's doc comment for the same real-backend gap). Commission math, confirmed
+ *  real (2026-09-06): creator commission = amount × offer.commissionRate; SellVia takes 1% from
+ *  EACH side, not one flat cut from the merchant — MERCHANT_PLATFORM_FEE_RATE of `amount`,
+ *  billed to the merchant on top of the commission; CREATOR_PLATFORM_FEE_RATE of the commission
+ *  itself, deducted from the creator's payout. The merchant never receives money through SellVia
+ *  at all (Shopify checkout already paid them the full `amount` directly) — `merchantAmount` is
+ *  what they're separately billed, not a residual split of this sale. Only allowed against an
+ *  approved application, matching the real rule that a Sale always belongs to an AffiliateLink. */
 export async function recordMockSale(email: string, applicationId: string, amount: number): Promise<Sale | undefined> {
   const record = await getRecord(email);
   const application = record.applications.find((a) => a.id === applicationId);
@@ -501,7 +507,8 @@ export async function recordMockSale(email: string, applicationId: string, amoun
   if (!offer) return undefined;
 
   const commissionAmount = Math.round(amount * (offer.commissionRate / 100) * 100) / 100;
-  const platformFee = Math.round(amount * PLATFORM_FEE_RATE * 100) / 100;
+  const merchantPlatformFee = Math.round(amount * MERCHANT_PLATFORM_FEE_RATE * 100) / 100;
+  const creatorPlatformFee = Math.round(commissionAmount * CREATOR_PLATFORM_FEE_RATE * 100) / 100;
   const sale: Sale = {
     id: newId("sale"),
     applicationId,
@@ -509,8 +516,11 @@ export async function recordMockSale(email: string, applicationId: string, amoun
     creatorId: application.creatorId,
     amount,
     commissionAmount,
-    platformFee,
-    merchantAmount: Math.round((amount - commissionAmount - platformFee) * 100) / 100,
+    merchantPlatformFee,
+    creatorPlatformFee,
+    platformFee: Math.round((merchantPlatformFee + creatorPlatformFee) * 100) / 100,
+    merchantAmount: Math.round((commissionAmount + merchantPlatformFee) * 100) / 100,
+    creatorPayout: Math.round((commissionAmount - creatorPlatformFee) * 100) / 100,
     status: "completed",
     acceptanceStatus: "pending",
     refundCreditStatus: "none",
@@ -530,7 +540,7 @@ export async function recordMockSale(email: string, applicationId: string, amoun
     },
   ];
   await saveRecord(email, record);
-  notifySale(email, sale.id, offer.productName, application.creatorEmail, applicationId);
+  notifySale(email, sale.id, offer.productName, application.creatorEmail);
   return sale;
 }
 
@@ -630,7 +640,9 @@ export async function getBillingCycles(email: string): Promise<BillingCycle[]> {
       const [year, month] = key.split("-").map(Number);
       const periodStart = new Date(year, month - 1, 1).toISOString();
       const periodEnd = new Date(year, month, 0).toISOString();
-      const totalOwed = sales.reduce((sum, s) => sum + s.commissionAmount, 0);
+      // merchantAmount — the real amount charged this cycle (commission + the merchant's own
+      // 1% platform fee), not just the raw commission total.
+      const totalOwed = sales.reduce((sum, s) => sum + s.merchantAmount, 0);
       const isCurrent = key === currentKey;
       // Deterministic (index-based, not random) so a page refresh doesn't reshuffle which past
       // cycle demos the "failed" state.
@@ -664,9 +676,23 @@ export function retryBillingCycle(cycles: BillingCycle[], cycleId: string): Bill
 
 /** Pure function, no storage access — stays synchronous. */
 export function buildSalesCsv(sales: Sale[]): string {
-  const header = "id,offerId,creatorId,amount,commissionAmount,platformFee,merchantAmount,acceptanceStatus,createdAt";
+  const header =
+    "id,offerId,creatorId,amount,commissionAmount,merchantPlatformFee,creatorPlatformFee,platformFee,merchantAmount,creatorPayout,acceptanceStatus,createdAt";
   const rows = sales.map((s) =>
-    [s.id, s.offerId, s.creatorId, s.amount, s.commissionAmount, s.platformFee, s.merchantAmount, s.acceptanceStatus, s.createdAt].join(","),
+    [
+      s.id,
+      s.offerId,
+      s.creatorId,
+      s.amount,
+      s.commissionAmount,
+      s.merchantPlatformFee,
+      s.creatorPlatformFee,
+      s.platformFee,
+      s.merchantAmount,
+      s.creatorPayout,
+      s.acceptanceStatus,
+      s.createdAt,
+    ].join(","),
   );
   return [header, ...rows].join("\n");
 }
@@ -683,7 +709,7 @@ export async function getOverviewStats(email: string): Promise<OverviewStats> {
     totalClicks,
     conversionRate: totalClicks > 0 ? (totalSalesCount / totalClicks) * 100 : 0,
     totalSales: record.sales.reduce((sum, s) => sum + s.amount, 0),
-    totalSpend: record.sales.reduce((sum, s) => sum + s.commissionAmount, 0),
+    totalSpend: record.sales.reduce((sum, s) => sum + s.merchantAmount, 0),
     activeOffers: record.offers.filter((o) => o.status === "live").length,
     pendingApplications: record.applications.filter((a) => a.status === "pending").length,
     totalApplications: record.applications.length,
@@ -776,8 +802,8 @@ export async function getOverviewTrends(email: string): Promise<OverviewTrends> 
 
   const salesThis = sumBy(record.sales, (s) => s.createdAt, (s) => s.amount, thisMonth);
   const salesLast = sumBy(record.sales, (s) => s.createdAt, (s) => s.amount, lastMonth);
-  const spendThis = sumBy(record.sales, (s) => s.createdAt, (s) => s.commissionAmount, thisMonth);
-  const spendLast = sumBy(record.sales, (s) => s.createdAt, (s) => s.commissionAmount, lastMonth);
+  const spendThis = sumBy(record.sales, (s) => s.createdAt, (s) => s.merchantAmount, thisMonth);
+  const spendLast = sumBy(record.sales, (s) => s.createdAt, (s) => s.merchantAmount, lastMonth);
   const appsThis = record.applications.filter((a) => monthKey(a.appliedAt) === thisMonth).length;
   const appsLast = record.applications.filter((a) => monthKey(a.appliedAt) === lastMonth).length;
 
@@ -877,7 +903,10 @@ export async function getLinkStats(applicationId: string) {
     clicks: events.filter((e) => e.stage === "click").length,
     cartAdds: events.filter((e) => e.stage === "cart_add").length,
     sales: sales.length,
-    commissionEarned: Math.round(sales.reduce((sum, s) => sum + s.commissionAmount, 0) * 100) / 100,
+    // creatorPayout (net, after the creator's own 1% fee) — "earned" reads as take-home to a
+    // creator, and this needs to stay consistent with getCreatorEarningsSummary's own totals,
+    // which are net for the same reason.
+    commissionEarned: Math.round(sales.reduce((sum, s) => sum + s.creatorPayout, 0) * 100) / 100,
   };
 }
 
@@ -908,14 +937,17 @@ export async function getCreatorEarningsSummary(creatorId: string) {
   const chargedMonthsByMerchant = new Map<string, Set<string>>();
 
   for (const { merchantEmail, sale } of owned) {
-    totalEarned += sale.commissionAmount;
+    // creatorPayout (net, after the creator's own 1% platform fee), not the gross
+    // commissionAmount — this is what the creator actually receives, and both fields below feed
+    // directly into wallet balance / payout amount, not just a display stat.
+    totalEarned += sale.creatorPayout;
     if (!chargedMonthsByMerchant.has(merchantEmail)) {
       const cycles = await getBillingCycles(merchantEmail);
       const charged = new Set(cycles.filter((c) => c.status === "charged").map((c) => monthKey(c.periodStart)));
       chargedMonthsByMerchant.set(merchantEmail, charged);
     }
     const chargedMonths = chargedMonthsByMerchant.get(merchantEmail)!;
-    if (chargedMonths.has(monthKey(sale.createdAt))) billedAndCharged += sale.commissionAmount;
+    if (chargedMonths.has(monthKey(sale.createdAt))) billedAndCharged += sale.creatorPayout;
   }
 
   return {

@@ -6,6 +6,8 @@ import { ArrowLeft, Monitor } from "lucide-react";
 import { Card } from "@/components/reference/ui/card";
 import { Button } from "@/components/reference/ui/button";
 import { AuthFlowForm } from "@/components/auth/auth-flow-form";
+import { ClerkSecurityForm } from "@/components/auth/clerk/clerk-security-form";
+import { isMockMode } from "@/lib/auth/config";
 
 /**
  * D12 — password change + MFA reuse the EXACT same Feature 1 (B5) settings flow as
@@ -57,7 +59,7 @@ export function SecuritySettingsView() {
       </Card>
 
       <Card className="p-6">
-        <AuthFlowForm kind="settings" allowFreshSettings />
+        {isMockMode ? <AuthFlowForm kind="settings" allowFreshSettings /> : <ClerkSecurityForm />}
       </Card>
     </div>
   );

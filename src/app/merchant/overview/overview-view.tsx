@@ -151,7 +151,7 @@ export function OverviewView({ email, onboardingComplete }: { email: string; onb
                   const Icon = ACTIVITY_ICON[item.kind];
                   return (
                     <li key={item.id} className="flex items-center gap-3 text-sm">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent-foreground">
                         <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                       </span>
                       <span className="flex-1 text-foreground">{item.message}</span>
@@ -169,21 +169,20 @@ export function OverviewView({ email, onboardingComplete }: { email: string; onb
 }
 
 /**
- * Trend line: real month-over-month % change when the store can compute one, otherwise an
- * explicit "Not enough data yet" placeholder — never a fabricated percentage. `trend === null`
- * covers both "no prior-month data to compare against" (store.ts's percentChange) and
- * "Active Campaigns" always (no historical status snapshot exists to compare against at all, see
- * OverviewTrends.activeOffers's doc comment). Same Card shell as StatCard, just with this
- * null-aware trend line instead of StatCard's own delta prop (which has no "no data" state).
+ * Trend line: real month-over-month % change when the store can compute one — never a
+ * fabricated percentage, and never a placeholder line either (per request: no "Not enough data
+ * yet" clutter on a fresh account — same behavior as creator/overview's plain StatCard, which
+ * just omits its delta line entirely when there's nothing to show). `trend === null` covers both
+ * "no prior-month data to compare against" (store.ts's percentChange) and "Active Campaigns"
+ * always (no historical status snapshot exists to compare against at all, see
+ * OverviewTrends.activeOffers's doc comment) — both simply render no trend line at all now.
  */
 function TrendStatCard({ label, value, trend }: { label: string; value: string | number; trend: number | null }) {
   return (
     <Card className="p-5">
       <p className="text-sm text-muted-foreground">{label}</p>
       <p className="mt-2 font-[family-name:var(--font-heading)] text-2xl font-semibold text-foreground">{value}</p>
-      {trend === null ? (
-        <p className="mt-1 text-xs text-muted-foreground-2">Not enough data yet</p>
-      ) : (
+      {trend !== null && (
         <p className={`mt-1 flex items-center gap-1 text-xs font-medium ${trend >= 0 ? "text-success" : "text-danger"}`}>
           {trend >= 0 ? <TrendingUp className="h-3 w-3" aria-hidden="true" /> : <TrendingDown className="h-3 w-3" aria-hidden="true" />}
           {trend >= 0 ? "+" : ""}

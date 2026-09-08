@@ -12,9 +12,9 @@ import { AlertTriangle } from "lucide-react";
 export function OnboardingGateBanner() {
   return (
     <div className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-accent/30 bg-accent/10 px-4 py-3 text-sm">
-      <AlertTriangle className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+      <AlertTriangle className="h-4 w-4 shrink-0 text-accent-foreground" aria-hidden="true" />
       <span className="flex-1 text-foreground">Finish onboarding to unlock your full dashboard.</span>
-      <Link href="/onboarding" className="font-medium text-accent underline underline-offset-2">
+      <Link href="/onboarding" className="font-medium text-accent-foreground underline underline-offset-2">
         Resume onboarding
       </Link>
     </div>

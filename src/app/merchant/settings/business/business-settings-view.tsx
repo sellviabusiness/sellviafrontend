@@ -22,7 +22,6 @@ export function BusinessSettingsView({ email }: { email: string }) {
   const [saved, setSaved] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [country, setCountry] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [businessCategory, setBusinessCategory] = useState("");
   const [website, setWebsite] = useState("");
@@ -33,7 +32,6 @@ export function BusinessSettingsView({ email }: { email: string }) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFullName(record.commonProfile.fullName);
       setPhone(record.commonProfile.phone);
-      setCountry(record.commonProfile.country);
     }
     if (record?.merchant) {
       setBusinessName(record.merchant.businessName);
@@ -45,7 +43,7 @@ export function BusinessSettingsView({ email }: { email: string }) {
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    saveCommonProfile(email, { fullName: fullName.trim(), email, country: country.trim(), phone: phone.trim() });
+    saveCommonProfile(email, { fullName: fullName.trim(), email, phone: phone.trim() });
     saveMerchantDetails(email, {
       businessName: businessName.trim(),
       businessCategory,
@@ -80,10 +78,6 @@ export function BusinessSettingsView({ email }: { email: string }) {
           <div className="space-y-1.5">
             <Label htmlFor="phone">Phone</Label>
             <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="country">Country</Label>
-            <Input id="country" value={country} onChange={(e) => setCountry(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="businessName">Business name</Label>
