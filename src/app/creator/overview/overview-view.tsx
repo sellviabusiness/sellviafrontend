@@ -140,7 +140,7 @@ export function OverviewView({ email }: { email: string }) {
                 const Icon = ACTIVITY_ICON[item.kind];
                 return (
                   <li key={item.id} className="flex items-center gap-3 text-sm">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent-foreground">
                       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                     </span>
                     <span className="flex-1 text-foreground">{item.message}</span>

@@ -2,7 +2,7 @@ import { getServerSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { ProfileSettingsView } from "./profile-settings-view";
 
-export const metadata = { title: "Profile — SellVia" };
+export const metadata = { title: "Profile" };
 
 export default async function CreatorProfileSettingsPage() {
   const session = await getServerSession();

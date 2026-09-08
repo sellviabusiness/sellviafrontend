@@ -21,7 +21,7 @@ export function EventTimeline({ events }: { events: OfferEvent[] }) {
         return (
           <li key={event.id} className="flex gap-3">
             <div className="flex flex-col items-center">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent-foreground">
                 <Icon className="h-3.5 w-3.5" aria-hidden="true" />
               </span>
               {i < events.length - 1 && <span className="mt-1 w-px flex-1 bg-border" aria-hidden="true" />}
