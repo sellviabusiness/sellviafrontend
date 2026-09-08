@@ -30,7 +30,7 @@ export const ROLE_NAV: Record<Role, NavItem[]> = {
   ],
   creator: [
     { label: "Discover", href: "/creator/discover" },
-    { label: "My Links", href: "/creator/my-links" },
+    { label: "Applications", href: "/creator/applications" },
     { label: "Earnings", href: "/creator/earnings" },
   ],
   // Task only specified the /admin/* prefix, not its sections — placeholder

@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Outfit, Figtree } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 import { SITE_URL, SITE_NAME } from "@/lib/seo/site";
 import { ThemeProvider } from "@/components/reference/theme/theme-provider";
+import { ApiAuthBridge } from "@/components/auth/clerk/api-auth-bridge";
+import { isMockMode } from "@/lib/auth/config";
 
 // Design System (docs: UX/Design System, Technical Architecture/Frontend Architecture)
 // Outfit — headlines, hero copy, nav, CTA buttons, section titles
@@ -49,7 +52,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider>{children}</ThemeProvider>
+        {/* Only mounted in clerk mode — constructing ClerkProvider without real Clerk keys
+            configured (the mock-mode default, see lib/auth/config.ts) throws at render time,
+            and the app must stay usable with zero real environment available. */}
+        {isMockMode ? (
+          <ThemeProvider>{children}</ThemeProvider>
+        ) : (
+          <ClerkProvider>
+            <ApiAuthBridge />
+            <ThemeProvider>{children}</ThemeProvider>
+          </ClerkProvider>
+        )}
       </body>
     </html>
   );

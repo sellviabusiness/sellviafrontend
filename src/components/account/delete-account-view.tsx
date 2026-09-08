@@ -12,8 +12,8 @@ import { getDeletionState, requestAccountDeletion, cancelAccountDeletion, getDay
 
 /**
  * Playbook 06 F2 — shared by both /merchant/settings/delete-account and
- * /creator/settings/delete-account (per your decision: an entry point in each role's own
- * Settings, since deleting the account ends both roles, not just one). Reads THIS account's real
+ * /creator/settings/delete-account (an entry point in each role's own Settings, since deletion
+ * is account-wide, not role-specific). Reads THIS account's real
  * current data across whichever roles the session holds, regardless of which settings page it
  * was opened from — deletion is account-wide.
  */
@@ -86,7 +86,7 @@ export function DeleteAccountView({ email, roles }: { email: string; roles: stri
           </span>
         </Alert>
         <p className="text-sm text-muted-foreground">
-          Your account and access to both roles will be permanently deleted on{" "}
+          Your account and role access will be permanently deleted on{" "}
           {new Date(scheduledAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}. You can cancel any time before then.
         </p>
         <Button variant="secondary" className="w-full" onClick={handleCancel} loading={busy}>

@@ -8,10 +8,9 @@ import { ROLE_PREFIX } from "@/lib/nav/config"
 // rather than three copies of a path list that could drift apart.
 const DASHBOARD_PATHS = Object.values(ROLE_PREFIX).map((prefix) => `${prefix}/`)
 
-// Auth flow pages (dynamic ?flow= ids, no content value) and the Kratos
-// proxy path — already noindex via meta (auth task), disallowed here too so
-// crawlers never even fetch them.
-const NON_CONTENT_PATHS = ["/login", "/registration", "/recovery", "/verification", "/api/"]
+// Auth screens — already noindex via meta (auth task), disallowed here too so crawlers never
+// even fetch them.
+const NON_CONTENT_PATHS = ["/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/api/"]
 
 const DISALLOW = [...DASHBOARD_PATHS, ...NON_CONTENT_PATHS]
 

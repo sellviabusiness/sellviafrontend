@@ -26,4 +26,14 @@ export interface ApiRequestOptions extends Omit<RequestInit, "body" | "method"> 
   timeoutMs?: number
   /** Skip attaching the Authorization header for this call (public endpoints). */
   skipAuth?: boolean
+  /**
+   * Explicit Bearer token for this call, bypassing the shared client-side provider
+   * (setAuthTokenProvider). Server Components/Server Actions MUST pass this rather than relying
+   * on the provider — that's a single module-level value, safe for the browser (one visitor)
+   * but not for the Next.js server process, which can be mid-flight on multiple different
+   * users' requests at once. See lib/auth/clerk/server-api-token.ts's getServerApiAuthToken().
+   * `null` here explicitly sends no Authorization header (distinct from omitting the option,
+   * which falls back to the provider).
+   */
+  authToken?: string | null
 }

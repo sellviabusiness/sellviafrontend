@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 // lettering has different proportions than the dark one's), so each gets its own native size
 // rather than assuming they match.
 const DARK_NATIVE = { width: 326, height: 87 }; // public/logo.png — white text, transparent bg
-const LIGHT_NATIVE = { width: 326, height: 128 }; // public/logo-light.png — black text, transparent bg
+const LIGHT_NATIVE = { width: 329, height: 94 }; // public/sellvia-logo.svg — real brand mark (accent-lime icon + black wordmark), transparent bg
 
 /**
  * The real SellVia logo, theme-aware (Playbook 10 §3 follow-up — separate light/dark assets, not
@@ -20,10 +20,10 @@ const LIGHT_NATIVE = { width: 326, height: 128 }; // public/logo-light.png — b
  * - Dark mode: public/logo.png (white wordmark) — UNCHANGED from before, still wrapped in the
  *   solid dark chip it already had, since the page background can't be assumed pure black
  *   everywhere the logo appears.
- * - Light mode: public/logo-light.png (black wordmark, the exact attached asset — not recreated)
- *   — rendered directly with no chip. It's black-on-transparent, already clearly visible against
- *   a light page on its own; wrapping it in a chip would be a visual change the request didn't
- *   ask for.
+ * - Light mode: public/sellvia-logo.svg (the real brand mark — lime accent icon + black wordmark,
+ *   swapped in for the plain black-text logo-light.png this used to render) — rendered directly
+ *   with no chip. Already clearly visible against a light page on its own; wrapping it in a chip
+ *   would be a visual change nothing asked for.
  *
  * Hydration: next-themes only knows the real theme after mount (the server can't read the
  * client's stored preference). Renders the light asset — the app's own default theme — until
@@ -61,7 +61,7 @@ export function SellViaLogo({
 
   const img = (
     <Image
-      src={isDark ? "/logo.png" : "/logo-light.png"}
+      src={isDark ? "/logo.png" : "/sellvia-logo.svg"}
       alt="SellVia"
       width={width}
       height={height}
@@ -73,6 +73,13 @@ export function SellViaLogo({
       // render size so both themes match.
       style={{ height, width, display: "block" }}
       priority
+      // Required for the SVG branch — next/image's built-in optimizer refuses to process SVGs
+      // unless `dangerouslyAllowSVG` is set globally in next.config.ts (a real XSS-surface
+      // trade-off Next.js gates behind that flag); Next's own docs recommend `unoptimized` on
+      // the <Image> instead when the src is known to be a trusted local SVG, which this is —
+      // narrower than opting the whole app's image pipeline into allowing SVGs. The PNG (dark
+      // mode) branch is unaffected and keeps normal optimization.
+      unoptimized={!isDark}
     />
   );
 

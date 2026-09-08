@@ -2,7 +2,7 @@ import { getServerSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { SupportView } from "./support-view";
 
-export const metadata = { title: "Support — SellVia" };
+export const metadata = { title: "Support" };
 
 /** Shared by both Merchant and Creator (linked from both topbars' account menus) — same
  *  "account-level, not role-level" reasoning as /account/security and F2's delete-account entry

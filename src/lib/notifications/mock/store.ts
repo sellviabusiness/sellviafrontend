@@ -123,18 +123,23 @@ export function notifyApplicationReceived(merchantEmail: string, offerId: string
   push(merchantEmail, "merchant", "application_received", `${creatorName} applied to "${productName}"`, `/merchant/applications/${applicationId}`, "New creator application");
 }
 
-export function notifyApplicationApproved(creatorEmail: string, applicationId: string, productName: string) {
-  push(creatorEmail, "creator", "application_approved", `You're approved for "${productName}"`, `/creator/my-links/${applicationId}`, "Your tracking link is ready.");
+export function notifyApplicationApproved(creatorEmail: string, productName: string) {
+  // My Links removed (2026-09-06) — the link now lives inline on Applications, not a separate
+  // per-application page, so this points at the list rather than a now-nonexistent detail route
+  // (no applicationId param needed here any more either).
+  push(creatorEmail, "creator", "application_approved", `You're approved for "${productName}"`, "/creator/applications", "Your tracking link is ready.");
 }
 
 export function notifyApplicationRejected(creatorEmail: string, productName: string) {
   push(creatorEmail, "creator", "application_rejected", `Your application to "${productName}" wasn't approved`, "/creator/applications");
 }
 
-export function notifySale(merchantEmail: string, saleId: string, productName: string, creatorEmail: string | undefined, applicationId: string) {
+export function notifySale(merchantEmail: string, saleId: string, productName: string, creatorEmail: string | undefined) {
   push(merchantEmail, "merchant", "sale", `New sale on "${productName}"`, `/merchant/sales/${saleId}`);
   if (creatorEmail) {
-    push(creatorEmail, "creator", "sale", `You earned commission from "${productName}"`, `/creator/my-links/${applicationId}`);
+    // My Links removed (2026-09-06) — see notifyApplicationApproved's own note above (no
+    // applicationId param needed here any more either).
+    push(creatorEmail, "creator", "sale", `You earned commission from "${productName}"`, "/creator/applications");
   }
 }
 

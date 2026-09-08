@@ -1,15 +1,19 @@
 import { apiRequest } from "@/lib/api"
-import type { NotificationSummary } from "./types"
+import type { Notification } from "./types"
 
-// Endpoint paths are placeholders — unverified against Notification Logic /
-// API-CONTRACT-SHEET (both unreachable). Session-scoped implicitly (same
-// pattern as every other apiRequest call: no user/role param, the backend
-// reads it off the request) so this stays role-agnostic — one bell, shared
-// across Merchant/Creator/Admin shells, per the task.
-export async function getNotificationSummary(): Promise<NotificationSummary> {
-  return apiRequest<NotificationSummary>("/notifications/summary")
+// Real endpoints, confirmed — API-ENDPOINTS.md, 2026-09-05 snapshot. Previously pointed at
+// placeholder paths (/notifications/summary, /notifications/read-all with a client-side loop)
+// that never existed; corrected to match what actually shipped.
+export async function getNotifications(): Promise<Notification[]> {
+  return apiRequest<Notification[]>("/notifications")
 }
 
-export async function markAllNotificationsRead(): Promise<void> {
-  await apiRequest<void>("/notifications/read-all", { method: "POST" })
+export async function markNotificationRead(id: string): Promise<Notification> {
+  return apiRequest<Notification>(`/notifications/${id}/read`, { method: "POST" })
+}
+
+/** Real bulk endpoint, added 2026-09-05 specifically because the per-id-only route was flagged
+ *  missing — one `UPDATE ... WHERE read_at IS NULL` server-side, not a client-side loop. */
+export async function markAllNotificationsRead(): Promise<{ markedCount: number }> {
+  return apiRequest<{ markedCount: number }>("/notifications/read-all", { method: "POST" })
 }

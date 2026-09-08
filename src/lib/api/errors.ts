@@ -29,9 +29,14 @@ const KIND_COPY: Record<ApiErrorKind, string> = {
 }
 
 /**
- * Per-code UI copy, takes priority over the status-band fallback above.
- * Empty until API-CONTRACT-SHEET is readable — populate with real `code`
- * values as they're confirmed, e.g. invalid_credentials: "Wrong email or password."
+ * Per-code UI copy that should override even the SERVER's own message — reserved for a code
+ * whose real message is accurate but frontend genuinely wants different wording (tone, more
+ * context, a link, whatever). Empty by design: API-ENDPOINTS.md's own framing ("the exact
+ * message text, not paraphrased") plus every example message actually reading like real,
+ * specific, actionable UI copy — not a debug string — means the default is to trust
+ * `serverMessage` (see ApiError below), not to re-write it here as codes get confirmed. Add an
+ * entry only when a specific message is confirmed wrong or worse for this app, not just to
+ * "have coverage."
  */
 const CODE_COPY_OVERRIDES: Record<string, string> = {}
 
@@ -52,16 +57,19 @@ export class ApiError extends Error {
   /** Server's error.status if the envelope was present, else the HTTP status (0 for network/timeout failures). */
   readonly status: number
   readonly kind: ApiErrorKind
-  /** Actionable copy safe to show a user — prefer this over `message`/`serverMessage`. */
+  /** Actionable copy safe to show a user — prefers a frontend override, then the server's own
+   *  message, then a generic status-band fallback. See CODE_COPY_OVERRIDES above for why the
+   *  server's message is trusted by default rather than re-paraphrased per code. */
   readonly uiMessage: string
-  /** Raw message from the server body, if any. Not vetted for end-user display. */
+  /** Raw message from the server body, if any — same value uiMessage falls back to; kept
+   *  separately for a caller that wants it regardless of what uiMessage resolved to. */
   readonly serverMessage?: string
 
   constructor(params: { code: string; status: number; serverMessage?: string }) {
     const kind = params.status === 0
       ? params.code === "timeout" ? "timeout" : "network"
       : classify(params.status)
-    const uiMessage = CODE_COPY_OVERRIDES[params.code] ?? KIND_COPY[kind]
+    const uiMessage = CODE_COPY_OVERRIDES[params.code] ?? params.serverMessage ?? KIND_COPY[kind]
 
     super(uiMessage)
     this.name = "ApiError"

@@ -8,10 +8,13 @@ import { useHasMounted } from "@/lib/reference/use-has-mounted";
 /** Small icon toggle between dark/light. Keyboard-operable, labeled for screen readers. */
 export function ThemeToggle({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
-  // Avoid a hydration mismatch: render the SSR-default (dark) until mounted client-side.
+  // Avoid a hydration mismatch: render the SSR-default (light — ThemeProvider's defaultTheme,
+  // see its own doc comment) until mounted client-side. Used to assume dark here, a leftover
+  // from before light became the app-wide default; left stale, this button briefly showed
+  // itself as "currently dark, click for light" on every fresh page load regardless of theme.
   const mounted = useHasMounted();
 
-  const isDark = mounted ? resolvedTheme === "dark" : true;
+  const isDark = mounted ? resolvedTheme === "dark" : false;
 
   return (
     <button

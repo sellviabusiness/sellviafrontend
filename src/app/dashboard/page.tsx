@@ -5,7 +5,7 @@ import { isOnboardingComplete } from "@/lib/onboarding/status";
 import { LogoutButton } from "./logout-button";
 import { SellViaLogo } from "@/components/reference/brand/sellvia-logo";
 
-export const metadata = { title: "Dashboard — SellVia" };
+export const metadata = { title: "Dashboard" };
 
 /**
  * Minimal placeholder — NOT Feature 3's real App Shell / Merchant/Creator dashboard (out of scope
@@ -56,7 +56,7 @@ export default async function DashboardPage() {
           This is a placeholder landing page for Feature 1 (Authentication) and Feature 2
           (Onboarding) only. The real Merchant/Creator dashboard (Feature 3 — App Shell & Role
           Context) is a separate, not-yet-built feature.
-          {AUTH_MODE === "mock" && " Auth is currently running against the local mock provider — no real Kratos involved."}
+          {AUTH_MODE === "mock" && " Auth is currently running against the local mock provider — no real Clerk involved."}
         </p>
         <div className="mt-6">
           <LogoutButton />

@@ -20,7 +20,7 @@ export function EmptyState({
   return (
     <Card className={cn("flex flex-col items-center gap-3 py-12 text-center", className)}>
       {icon && (
-        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent">
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent-foreground">
           {icon}
         </span>
       )}
