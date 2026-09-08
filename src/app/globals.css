@@ -4,6 +4,29 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Breakpoints (not centrally documented — decided here 2026-08-25, web-responsive
+ * only, no native app to coordinate with):
+ *   xs   480px  small phones (rarely targeted directly — base/unprefixed styles
+ *               already cover most mobile layout; xs is for the rare tighter tweak)
+ *   sm   640px  large phones / small tablets portrait
+ *   md   768px  tablets portrait — grid goes from 4 to 8 columns here
+ *   lg  1024px  tablets landscape / small laptops — full 12-column grid activates here
+ *   xl  1280px  laptops/desktops
+ *   2xl 1536px  large desktops
+ * sm/md/lg/xl/2xl match Tailwind's own defaults exactly (kept, not reinvented) —
+ * pinned explicitly below so they're a recorded decision, not an implicit default
+ * that silently drifts on a Tailwind upgrade. xs is the one real addition.
+ */
+@theme {
+  --breakpoint-xs: 30rem; /* 480px */
+  --breakpoint-sm: 40rem; /* 640px */
+  --breakpoint-md: 48rem; /* 768px */
+  --breakpoint-lg: 64rem; /* 1024px */
+  --breakpoint-xl: 80rem; /* 1280px */
+  --breakpoint-2xl: 96rem; /* 1536px */
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -27,6 +50,21 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  /* Reference-only tokens (2026-08-25 replace-with-reference task) — this repo has
+     no equivalent (--color-destructive plays --color-danger's role here, but under
+     a different name), so these need real registration or bg-danger/text-danger/
+     etc. compile to nothing. Self-referential on purpose ("inline" mode): no global
+     fallback value exists for these, only .reference-theme defines them (see bottom
+     of this file) — used exclusively by the copied Authentication/Onboarding/
+     Merchant screens, which are always wrapped in that scope. */
+  --color-danger: var(--color-danger);
+  --color-danger-border: var(--color-danger-border);
+  --color-danger-bg: var(--color-danger-bg);
+  --color-border-hover: var(--color-border-hover);
+  --color-muted-foreground-2: var(--color-muted-foreground-2);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -49,48 +87,68 @@
 }
 
 /*
- * SellVia is a single black-first theme (docs: UX/Design System) — no light mode.
- * Tokens below are the binding design.md palette, not shadcn defaults:
- *   background #000, accent (lime) #BFFF13 used sparingly, Gray 01 #A1A1AA,
- *   Gray 02 #787882 (WCAG AA-corrected 2026-08-23), borders #27272A / hover #3F3F46.
+ * Playbook 10 §2 ROOT-CAUSE FIX: this block used to say "no light mode" and set every
+ * value in :root IDENTICAL to .dark below (#000 background even at :root, i.e. "light").
+ * That's the actual reason the app kept showing dark regardless of next-themes' own
+ * defaultTheme setting or the dark/light class toggling correctly — next-themes was
+ * genuinely switching which class applied, but :root's own base values were already
+ * pure black, so removing the .dark class changed nothing visually. Fixed by giving
+ * :root a real, distinct light palette here — .dark below is UNCHANGED (still the
+ * original binding dark palette). Light values mirror .reference-theme's own
+ * already-shipped, WCAG-AA-checked light palette (see that block further down this
+ * file) for visual consistency between the two token systems, not invented fresh.
+ * Accent stays lime #BFFF13 in both modes — brand color, not theme-dependent.
  */
 :root {
-  --background: #000000;
-  --foreground: #FFFFFF;
-  --card: #000000;
-  --card-foreground: #FFFFFF;
-  --popover: #000000;
-  --popover-foreground: #FFFFFF;
+  --background: #FFFFFF;
+  --foreground: #0A0A0A;
+  --card: #FFFFFF;
+  --card-foreground: #0A0A0A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0A0A0A;
   --primary: #BFFF13;
   --primary-foreground: #000000;
-  --secondary: #18181B;
-  --secondary-foreground: #FFFFFF;
-  --muted: #18181B;
-  --muted-foreground: #787882;
-  --accent: #18181B;
-  --accent-foreground: #FFFFFF;
-  --destructive: #EF4444;
-  --border: #27272A;
-  --input: #27272A;
+  --secondary: #F4F4F5;
+  --secondary-foreground: #0A0A0A;
+  --muted: #F4F4F5;
+  --muted-foreground: #52525B;
+  --accent: #F4F4F5;
+  --accent-foreground: #0A0A0A;
+  --destructive: #DC2626;
+  --success: #16A34A;
+  --warning: #D97706;
+  --info: #2563EB;
+  --border: #E4E4E7;
+  --input: #E4E4E7;
   --ring: #BFFF13;
   --chart-1: #BFFF13;
-  --chart-2: #A1A1AA;
-  --chart-3: #787882;
-  --chart-4: #3F3F46;
-  --chart-5: #27272A;
+  --chart-2: #71717A;
+  --chart-3: #A1A1AA;
+  --chart-4: #D4D4D8;
+  --chart-5: #E4E4E7;
   --radius: 0.625rem;
-  --sidebar: #000000;
-  --sidebar-foreground: #FFFFFF;
+  /* 12-col grid container cap — stops content stretching edge-to-edge past 2xl.
+     Not breakpoint-tied; only used via Container (layout/container.tsx). */
+  --container-max: 90rem; /* 1440px */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0A0A0A;
   --sidebar-primary: #BFFF13;
   --sidebar-primary-foreground: #000000;
-  --sidebar-accent: #18181B;
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #27272A;
+  --sidebar-accent: #F4F4F5;
+  --sidebar-accent-foreground: #0A0A0A;
+  --sidebar-border: #E4E4E7;
   --sidebar-ring: #BFFF13;
 }
 
-/* No separate dark theme — SellVia has no light mode. Kept identical to :root
-   only so any shadcn component that toggles a `.dark` class stays consistent. */
+/* Dark palette — the original binding design.md palette (docs: UX/Design System):
+   background #000, accent (lime) #BFFF13 used sparingly, Gray 01 #A1A1AA, Gray 02
+   #787882 (WCAG AA-corrected 2026-08-23), borders #27272A / hover #3F3F46. Status
+   colors (success/warning/info, 2026-08-25) sit alongside --destructive at the same
+   Tailwind "500" weight so all four read as one family; each is >=5.5:1 against #000
+   (WCAG AA for text). Use tinted/10 backgrounds + full-strength text, same pattern as
+   --destructive in badge.tsx/button.tsx — never a solid fill. Applied via next-themes'
+   `.dark` class, user-toggleable from inside the dashboards only (Playbook 10 §2) —
+   :root above is what actually renders by default now. */
 .dark {
   --background: #000000;
   --foreground: #FFFFFF;
@@ -107,6 +165,9 @@
   --accent: #18181B;
   --accent-foreground: #FFFFFF;
   --destructive: #EF4444;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --info: #3B82F6;
   --border: #27272A;
   --input: #27272A;
   --ring: #BFFF13;
@@ -135,4 +196,120 @@
   html {
     @apply font-sans;
   }
+}
+
+/*
+ * Restrained-animation rule (docs: Interaction Patterns — unreachable 2026-08-25,
+ * flagged to user as unverified against central doc):
+ *   - duration-100 for micro-interactions (buttons, tabs, badges), duration-100 to
+ *     duration-150 for overlays (dialog/dropdown/select) — see existing components.
+ *   - fade + zoom-95 only, no spring/bounce, no scale beyond 95-100%.
+ *   - press feedback is a 1px translate, never a scale.
+ * This block is the one place that rule is enforced for every viewer, not just a
+ * convention components have to remember: any user with reduced-motion on gets
+ * near-instant, non-essential animation stripped site-wide (WCAG 2.3.3).
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Reference project's own design tokens (its Docs/UX/Design System — a light+dark
+ * system, distinct from this repo's black-only theme above), for the copied
+ * Authentication/Onboarding/Merchant screens (2026-08-25 replace-with-reference task).
+ * Scoped under .reference-theme rather than added to :root/.dark directly: the
+ * reference uses the SAME Tailwind variable names this repo already claims
+ * (--color-background, --color-border, --color-danger, --radius-sm, etc.) with
+ * DIFFERENT values (this repo's are dark-only and identical in both blocks above;
+ * the reference's are a real light/dark pair). Declaring them at :root/.dark would
+ * silently override this repo's own tokens sitewide — instead they're namespaced
+ * (--ref-*) globally (harmless, new names) and only mapped onto the real Tailwind
+ * variable names *inside* .reference-theme, so only these specific screens see
+ * them; every other page in this repo is untouched and unaffected.
+ */
+:root {
+  --ref-background: #ffffff;
+  --ref-foreground: #0a0a0a;
+  --ref-muted-foreground: #52525b;
+  --ref-muted-foreground-2: #71717a;
+  --ref-card: #ffffff;
+  --ref-border: #e4e4e7;
+  --ref-border-hover: #d4d4d8;
+  --ref-accent: #bfff13;
+  --ref-accent-foreground: #000000;
+  --ref-danger: #b91c1c;
+  --ref-danger-border: #fca5a5;
+  --ref-danger-bg: #fef2f2;
+  --ref-success: #15803d;
+  --ref-radius-sm: 10px;
+  --ref-radius-md: 12px;
+}
+
+.dark {
+  --ref-background: #000000;
+  --ref-foreground: #ffffff;
+  --ref-muted-foreground: #a1a1aa;
+  --ref-muted-foreground-2: #71717a;
+  --ref-card: #000000;
+  --ref-border: #27272a;
+  --ref-border-hover: #3f3f46;
+  --ref-accent: #bfff13;
+  --ref-accent-foreground: #000000;
+  --ref-danger: #f87171;
+  --ref-danger-border: #7f1d1d;
+  --ref-danger-bg: #1a0a0a;
+  --ref-success: #4ade80;
+}
+
+.reference-theme {
+  --color-background: var(--ref-background);
+  --color-foreground: var(--ref-foreground);
+  --color-muted-foreground: var(--ref-muted-foreground);
+  --color-muted-foreground-2: var(--ref-muted-foreground-2);
+  --color-card: var(--ref-card);
+  --color-border: var(--ref-border);
+  --color-border-hover: var(--ref-border-hover);
+  --color-accent: var(--ref-accent);
+  --color-accent-foreground: var(--ref-accent-foreground);
+  --color-danger: var(--ref-danger);
+  --color-danger-border: var(--ref-danger-border);
+  --color-danger-bg: var(--ref-danger-bg);
+  --color-success: var(--ref-success);
+  --radius-sm: var(--ref-radius-sm);
+  --radius-md: var(--ref-radius-md);
+  /*
+   * REDIRECT-BUG FIX (found verifying the Merchant Overview dark/light toggle): the
+   * `--color-*` overrides above only fix components that reference `var(--color-background)`
+   * etc. directly. Tailwind v4's `@theme inline` block up top declares `--color-background:
+   * var(--background)` — a single-hop alias — and its compiler flattens simple aliases like
+   * that straight through, so compiled utility classes (`bg-background`, `text-foreground`,
+   * `border-border`, `bg-accent`, `text-accent-foreground`, `text-muted-foreground`,
+   * `bg-success`/`text-success`/`border-success`) end up reading the RAW `--background`/
+   * `--foreground`/etc. variable directly, bypassing this scope's `--color-*` override
+   * entirely. Confirmed empirically: `getComputedStyle(el).getPropertyValue('--color-background')`
+   * read the correct light value here while `getComputedStyle(el).backgroundColor` still
+   * rendered black. Fix: also override the raw variable names Tailwind actually compiled
+   * against — every one found via a grep of every `bg-/text-/border-/ring-*` class actually
+   * used across the copied Authentication/Onboarding/Merchant screens (components/reference,
+   * components/merchant, components/onboarding, components/auth, and their app/ routes).
+   * `--danger`/`--border-hover`/`--muted-foreground-2` don't need this: the main app has no
+   * raw variable under those names, so `@theme inline` can't flatten past this scope's own
+   * (self-referential, "inline" by design) alias for them.
+   */
+  --background: var(--ref-background);
+  --foreground: var(--ref-foreground);
+  --card: var(--ref-card);
+  --card-foreground: var(--ref-foreground);
+  --border: var(--ref-border);
+  --muted-foreground: var(--ref-muted-foreground);
+  --accent: var(--ref-accent);
+  --accent-foreground: var(--ref-accent-foreground);
+  --success: var(--ref-success);
 }
