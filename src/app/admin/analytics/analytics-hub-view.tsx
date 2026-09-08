@@ -23,7 +23,7 @@ export function AnalyticsHubView() {
           <Link key={href} href={href}>
             <Card className="flex h-full flex-col gap-2 p-5 transition-colors hover:border-border-hover">
               <div className="flex items-center justify-between">
-                <Icon className="h-5 w-5 text-accent" aria-hidden="true" />
+                <Icon className="h-5 w-5 text-accent-foreground" aria-hidden="true" />
                 <ChevronRight className="h-4 w-4 text-muted-foreground-2" aria-hidden="true" />
               </div>
               <p className="text-sm font-medium text-foreground">{label}</p>

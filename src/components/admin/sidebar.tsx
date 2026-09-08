@@ -12,16 +12,19 @@ import {
   AlertTriangle,
   Terminal,
   BarChart3,
+  UserPlus,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isMockMode } from "@/lib/auth/config";
 
 /**
  * Playbook 07's G1–G10 rail — one entry per screen, "fully separate nav" from Merchant/Creator
  * per SCREEN_INVENTORY's own global note for the whole Admin section.
  *
- * G7 (Waitlist) removed — Playbook 08 removed the public marketing site entirely (no public
- * waitlist form exists anymore to feed it, so there's nothing left to manage here).
+ * G7 (Waitlist) stayed out of the mock rail — Playbook 08 removed the public marketing site
+ * entirely, so the mock has no waitlist form feeding it. The real backend has its own
+ * `/admin/waitlist` queue regardless (API-ENDPOINTS.md), so it's added back for real mode only.
  */
 const NAV_ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutGrid },
@@ -29,6 +32,7 @@ const NAV_ITEMS = [
   { href: "/admin/offers/vetting", label: "Offer vetting", icon: ClipboardCheck },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/refunds-disputes", label: "Refunds & disputes", icon: Receipt },
+  ...(isMockMode ? [] : [{ href: "/admin/waitlist", label: "Waitlist", icon: UserPlus }] as const),
   { href: "/admin/reconciliation", label: "Reconciliation", icon: Scale },
   { href: "/admin/at-risk-users", label: "At-risk users", icon: AlertTriangle },
   { href: "/admin/console", label: "AI Console", icon: Terminal },
