@@ -179,3 +179,96 @@ export interface AiUsageEvent {
   relatedEntityType?: string;
   createdAt: string;
 }
+
+// ---------------------------------------------------------------------------
+// REAL — API-ENDPOINTS.md. Separate section rather than interspersed with the mock G-item types
+// above, same reasoning as RealOffer/RealApplication (lib/merchant/types.ts): several of these
+// have no mock counterpart at all (waitlist, KPIs, funnel are net-new UI, not swaps), and the
+// ones that do differ enough in shape (UserRead has none of TicketContext's cross-entity counts;
+// ModerationFlagRead has no friendly entityLabel/ownerEmail) that reconciling into one type would
+// misrepresent one mode or the other.
+// ---------------------------------------------------------------------------
+
+export interface RealUser {
+  id: string;
+  email: string;
+  name: string | null;
+  isMerchant: boolean;
+  isCreator: boolean;
+  isAdmin: boolean;
+  isSuspended: boolean;
+  isAtRisk: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** No entityLabel/ownerEmail the way the mock's ModerationFlag has — entityId is opaque, and
+ *  there's no admin endpoint to resolve a sale/application id to anything friendlier (same shape
+ *  of gap as RealSale's unresolvable affiliateLinkId). Shown as entityType + a truncated id. */
+export type RealFlagStatus = "open" | "cleared" | "actioned";
+
+export interface RealModerationFlag {
+  id: string;
+  entityType: "sale" | "application";
+  entityId: string;
+  reason: string;
+  rule: string;
+  reportedByUserId: string;
+  status: RealFlagStatus;
+  resolvedByUserId: string | null;
+  resolutionNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type RealWaitlistStatus = "waiting" | "invited";
+
+export interface RealWaitlistEntry {
+  id: string;
+  email: string;
+  status: RealWaitlistStatus;
+  invitedAt: string | null;
+  createdAt: string;
+}
+
+/** Several fields `null` until enough data exists to compute meaningfully — not a bug, a real
+ *  "not enough data yet" state to build for, same convention the mock's own dashboard already
+ *  uses for liquidityRatio/avgDays. */
+export interface RealMarketplaceKPIs {
+  since: string;
+  activeMerchants: number;
+  activeCreators: number;
+  liquidityRatio: number | null;
+  clickToSaleConversionRate: number | null;
+  refundRate: number | null;
+  flaggedSaleRate: number | null;
+  flaggedApplicationRate: number | null;
+  platformFeeRevenueCents: number;
+  timeToFirstApplicationAvgHours: number | null;
+  timeToPayoutAvgHours: number | null;
+}
+
+export interface RealFunnelStage {
+  stage: string;
+  count: number;
+}
+
+export interface RealFunnel {
+  merchant: { stages: RealFunnelStage[] };
+  creator: { stages: RealFunnelStage[] };
+}
+
+export interface RealMonthlyPnLReport {
+  id: string;
+  periodStart: string;
+  periodEnd: string;
+  currency: string;
+  platformFeeRevenueCents: number;
+  swichFeesCents: number;
+  hostingCents: number;
+  otherSaasCents: number;
+  aiCostsCents: number;
+  netCents: number;
+  finalized: boolean;
+  createdAt: string;
+}

@@ -6,7 +6,14 @@ import { ArrowLeft, Lock } from "lucide-react";
 import { Card } from "@/components/reference/ui/card";
 import { Button } from "@/components/reference/ui/button";
 import { Input } from "@/components/reference/ui/input";
-import { computeMonthlyPnl, finalizeMonthlyPnl, addManualCostEntry, getManualCostEntries, PLATFORM_FEE_RATE } from "@/lib/admin/store";
+import {
+  computeMonthlyPnl,
+  finalizeMonthlyPnl,
+  addManualCostEntry,
+  getManualCostEntries,
+  MERCHANT_PLATFORM_FEE_RATE,
+  CREATOR_PLATFORM_FEE_RATE,
+} from "@/lib/admin/store";
 import type { MonthlyPnl, ManualCostEntry } from "@/lib/admin/types";
 import { formatCurrency } from "@/lib/merchant/format";
 
@@ -65,7 +72,10 @@ export function PnlView({ actorEmail }: { actorEmail: string }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-[family-name:var(--font-heading)] text-xl font-semibold text-foreground">Monthly P&L — {month}</h1>
-          <p className="text-sm text-muted-foreground">Platform fee revenue at {(PLATFORM_FEE_RATE * 100).toFixed(0)}% of GMV, minus known cost lines.</p>
+          <p className="text-sm text-muted-foreground">
+            Platform fee revenue at {(MERCHANT_PLATFORM_FEE_RATE * 100).toFixed(0)}% of each sale (merchant side) plus{" "}
+            {(CREATOR_PLATFORM_FEE_RATE * 100).toFixed(0)}% of each commission (creator side), minus known cost lines.
+          </p>
         </div>
         {pnl.finalized ? (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground">

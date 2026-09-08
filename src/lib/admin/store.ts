@@ -27,7 +27,7 @@ import {
 } from "@/lib/merchant/store";
 import { getAllPayoutRequestsAcrossCreators } from "@/lib/creator/store";
 import { getAllUsers } from "@/lib/auth/mock/user-store";
-import { PLATFORM_FEE_RATE } from "@/lib/merchant/constants";
+import { MERCHANT_PLATFORM_FEE_RATE, CREATOR_PLATFORM_FEE_RATE } from "@/lib/merchant/constants";
 import {
   CHURN_AT_RISK_HOURS,
   CHARGEBACK_FREE_LIFETIME_COUNT,
@@ -694,8 +694,9 @@ export function getAiUsageEvents(): AiUsageEvent[] {
 /**
  * Analytics/Automated Monthly P&L's real formula: Revenue (platform fees) − Costs (Switch
  * processing fees + hosting + AI/token + other SaaS). Only `platformFeeRevenue` is real/
- * computed here (sum of Sale.platformFee for the month, across every merchant — a real number
- * this app actually has). Every other line is either a manual-entry total (hosting, other SaaS —
+ * computed here (sum of Sale.platformFee for the month, across every merchant — the confirmed
+ * 1% merchant-side + 1% creator-side fee combined, not a single flat cut — a real number this
+ * app actually has). Every other line is either a manual-entry total (hosting, other SaaS —
  * doc's own "manual monthly entry" fallback) or genuinely zero because no real cost data exists
  * yet (Switch's own processing fee, AI/token costs — this app's AI features call a real,
  * currently-unreachable backend and have logged zero real ai_usage_events). Never invented.
@@ -771,6 +772,6 @@ export async function getCreatorUnitEconomics(): Promise<CreatorUnitEconomics[]>
   return Array.from(byCreator.entries()).map(([email, gmvDriven]) => ({ email, gmvDriven: Math.round(gmvDriven * 100) / 100 }));
 }
 
-// PLATFORM_FEE_RATE re-exported for the analytics UI's own "how platform fee revenue is
-// computed" explainer text, rather than that screen hardcoding the number a second time.
-export { PLATFORM_FEE_RATE };
+// Re-exported for the analytics UI's own "how platform fee revenue is computed" explainer text,
+// rather than that screen hardcoding the numbers a second time.
+export { MERCHANT_PLATFORM_FEE_RATE, CREATOR_PLATFORM_FEE_RATE };

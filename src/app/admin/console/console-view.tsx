@@ -97,7 +97,7 @@ export function ConsoleView({ actorEmail }: { actorEmail: string }) {
       {awaitingConfirmation && (
         <Card className="flex flex-wrap items-center justify-between gap-3 border-accent/30 bg-accent/5 p-4">
           <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <ShieldAlert className="h-4 w-4 text-accent" aria-hidden="true" />
+            <ShieldAlert className="h-4 w-4 text-accent-foreground" aria-hidden="true" />
             Confirmation required before this runs.
           </p>
           <div className="flex gap-2">
