@@ -8,9 +8,9 @@ export interface RadioOption {
   hint?: string;
 }
 
-/** Bordered-card radio picker — same visual language as the role picker on /onboarding/role-select
- *  (accent border when selected), reused for product type and payout method so both "pick one"
- *  moments in onboarding look and behave the same way. */
+/** Bordered-card radio picker — same visual language as the signup-time role picker
+ *  (components/auth/role-selector.tsx, accent border when selected), reused for product type
+ *  and payout method so every "pick one" moment across the app looks and behaves the same way. */
 export function RadioGroup({
   name,
   options,

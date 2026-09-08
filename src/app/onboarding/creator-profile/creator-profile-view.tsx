@@ -9,10 +9,13 @@ import { useOnboardingStep } from "@/components/onboarding/use-onboarding-step";
 import { Label } from "@/components/reference/ui/label";
 import { Input } from "@/components/reference/ui/input";
 import { Select } from "@/components/reference/ui/select";
+import { Alert } from "@/components/reference/ui/alert";
 import { FormErrorText } from "@/components/reference/ui/form-error-text";
 import { saveCreatorDetails } from "@/lib/onboarding/store";
 import { STEP_PATH, stepAfter, stepBefore } from "@/lib/onboarding/steps";
 import type { CreatorDetails } from "@/lib/onboarding/types";
+import { isMockMode } from "@/lib/auth/config";
+import { apiRequest, ApiError } from "@/lib/api";
 
 const PLATFORMS: { value: CreatorDetails["primaryPlatform"]; label: string }[] = [
   { value: "instagram", label: "Instagram" },
@@ -22,15 +25,17 @@ const PLATFORMS: { value: CreatorDetails["primaryPlatform"]; label: string }[] =
 
 const NICHES = ["Beauty", "Fashion", "Tech", "Lifestyle", "Fitness", "Gaming", "Food", "Other"];
 
-export function CreatorProfileView({ email, sessionRoles }: { email: string; sessionRoles: string[] }) {
+export function CreatorProfileView({ email, id, sessionRoles }: { email: string; id: string; sessionRoles: string[] }) {
   const router = useRouter();
-  const { record, ready, roles } = useOnboardingStep("creator-profile", email, sessionRoles);
+  const { record, ready, roles } = useOnboardingStep("creator-profile", email, id, sessionRoles);
 
   const [primaryPlatform, setPrimaryPlatform] = useState<CreatorDetails["primaryPlatform"] | "">("");
   const [handle, setHandle] = useState("");
   const [audienceSize, setAudienceSize] = useState("");
   const [niche, setNiche] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (record?.creator) {
@@ -43,8 +48,9 @@ export function CreatorProfileView({ email, sessionRoles }: { email: string; ses
     }
   }, [record]);
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    setApiError(null);
     const nextErrors: Record<string, string> = {};
     if (!primaryPlatform) nextErrors.primaryPlatform = "Choose your primary platform.";
     if (handle.trim().length < 2) nextErrors.handle = "Enter your handle or profile link.";
@@ -65,6 +71,43 @@ export function CreatorProfileView({ email, sessionRoles }: { email: string; ses
       audienceSize: audienceSize.trim(),
       niche,
     });
+
+    if (!isMockMode) {
+      // Per the backend integration thread: POST /users/creator-profile is the real signal the
+      // backend gates creator access on (is_creator). `name` rides along from the about-you step
+      // (always completed first, see steps.ts's getStepSequence). `platform`/`handle` are now
+      // accepted too (added to CreatorProfileCreate, backend migration
+      // 202609040001_onboarding_extra_fields.py) — both optional there, so safe to send. BUG
+      // FOUND LIVE (API-ENDPOINTS.md, 2026-09-05 snapshot) — this field is named `platform` on
+      // the wire, not `primaryPlatform` as first guessed (flagged as an inference at the time,
+      // not a confirmed name) — was silently dropped by the backend's own schema validation
+      // until this correction. `engagementRate` still isn't sent from here: this step never
+      // collects it — it's only ever set later, in Creator Settings → Profile
+      // (profile-settings-view.tsx), which has no backend call of its own yet (localStorage
+      // only) even though CreatorProfileCreate now accepts it too.
+      setSubmitting(true);
+      try {
+        await apiRequest("/users/creator-profile", {
+          method: "POST",
+          body: {
+            name: record?.commonProfile?.fullName ?? "",
+            audienceSize: audienceNum,
+            niche,
+            platform: primaryPlatform,
+            handle: handle.trim(),
+          },
+        });
+      } catch (err) {
+        // 409 ALREADY_A_CREATOR — idempotent, not a failure.
+        if (!(err instanceof ApiError && err.code === "ALREADY_A_CREATOR")) {
+          setSubmitting(false);
+          setApiError(err instanceof ApiError ? err.uiMessage : "Something went wrong. Please try again.");
+          return;
+        }
+      }
+      setSubmitting(false);
+    }
+
     const next = stepAfter("creator-profile", roles) ?? "payout";
     router.push(STEP_PATH[next]);
   }
@@ -84,6 +127,7 @@ export function CreatorProfileView({ email, sessionRoles }: { email: string; ses
         <OnboardingSkeleton />
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          {apiError && <Alert variant="error">{apiError}</Alert>}
           <div className="space-y-1.5">
             <Label htmlFor="primaryPlatform" required>Primary platform</Label>
             <Select
@@ -143,7 +187,7 @@ export function CreatorProfileView({ email, sessionRoles }: { email: string; ses
             {errors.niche && <FormErrorText id="niche-error">{errors.niche}</FormErrorText>}
           </div>
 
-          <OnboardingNav onBack={back ? () => router.push(STEP_PATH[back]) : undefined} />
+          <OnboardingNav onBack={back ? () => router.push(STEP_PATH[back]) : undefined} loading={submitting} />
         </form>
       )}
     </OnboardingLayout>

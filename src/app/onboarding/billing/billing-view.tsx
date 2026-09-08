@@ -19,9 +19,9 @@ import type { ConnectionStatus } from "@/lib/onboarding/types";
  * doesn't touch this file. Continue is blocked (not just disabled — an explicit message, per
  * spec) until the adapter reports "connected".
  */
-export function BillingView({ email, sessionRoles }: { email: string; sessionRoles: string[] }) {
+export function BillingView({ email, id, sessionRoles }: { email: string; id: string; sessionRoles: string[] }) {
   const router = useRouter();
-  const { record, ready, roles } = useOnboardingStep("billing", email, sessionRoles);
+  const { record, ready, roles } = useOnboardingStep("billing", email, id, sessionRoles);
   const [status, setStatus] = useState<ConnectionStatus>("not_connected");
   const [blocked, setBlocked] = useState(false);
 

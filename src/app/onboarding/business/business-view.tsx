@@ -10,10 +10,13 @@ import { useOnboardingStep } from "@/components/onboarding/use-onboarding-step";
 import { Label } from "@/components/reference/ui/label";
 import { Input } from "@/components/reference/ui/input";
 import { Select } from "@/components/reference/ui/select";
+import { Alert } from "@/components/reference/ui/alert";
 import { FormErrorText } from "@/components/reference/ui/form-error-text";
 import { saveMerchantDetails } from "@/lib/onboarding/store";
 import { STEP_PATH, stepAfter, stepBefore } from "@/lib/onboarding/steps";
 import type { MerchantDetails } from "@/lib/onboarding/types";
+import { isMockMode } from "@/lib/auth/config";
+import { apiRequest, ApiError } from "@/lib/api";
 
 const BUSINESS_CATEGORIES = [
   "Beauty",
@@ -42,15 +45,17 @@ function isValidUrl(value: string): boolean {
   }
 }
 
-export function BusinessView({ email, sessionRoles }: { email: string; sessionRoles: string[] }) {
+export function BusinessView({ email, id, sessionRoles }: { email: string; id: string; sessionRoles: string[] }) {
   const router = useRouter();
-  const { record, ready, roles } = useOnboardingStep("business", email, sessionRoles);
+  const { record, ready, roles } = useOnboardingStep("business", email, id, sessionRoles);
 
   const [businessName, setBusinessName] = useState("");
   const [businessCategory, setBusinessCategory] = useState("");
   const [productType, setProductType] = useState<MerchantDetails["productType"] | "">("");
   const [website, setWebsite] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (record?.merchant) {
@@ -63,8 +68,9 @@ export function BusinessView({ email, sessionRoles }: { email: string; sessionRo
     }
   }, [record]);
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    setApiError(null);
     const nextErrors: Record<string, string> = {};
     if (businessName.trim().length < 2) nextErrors.businessName = "Enter your business or brand name.";
     if (!businessCategory) nextErrors.businessCategory = "Choose a business category.";
@@ -86,6 +92,41 @@ export function BusinessView({ email, sessionRoles }: { email: string; sessionRo
       productType: productType as MerchantDetails["productType"],
       website: website.trim(),
     });
+
+    if (!isMockMode) {
+      // Per the backend integration thread: POST /users/merchant-profile is the real signal the
+      // backend gates merchant access on (is_merchant), not anything written to Clerk. `name`
+      // isn't derivable from Clerk server-side, so it rides along from the about-you step
+      // (already saved to `record` by the time this step is reachable — about-you always comes
+      // first, see steps.ts's getStepSequence). `category` here is this app's `productType`
+      // (physical/digital), distinct from `businessCategory` (the vertical picker below) —
+      // both now accepted (businessCategory + website added to MerchantProfileCreate, backend
+      // migration 202609040001_onboarding_extra_fields.py) after previously being silently
+      // dropped; both optional, so still safe to send even if a field name turns out wrong.
+      setSubmitting(true);
+      try {
+        await apiRequest("/users/merchant-profile", {
+          method: "POST",
+          body: {
+            name: record?.commonProfile?.fullName ?? "",
+            businessName: businessName.trim(),
+            category: productType,
+            businessCategory,
+            website: website.trim(),
+          },
+        });
+      } catch (err) {
+        // 409 ALREADY_A_MERCHANT — idempotent, this account already has the profile Clerk's
+        // own metadata (or a page refresh mid-onboarding) may not know about yet. Not a failure.
+        if (!(err instanceof ApiError && err.code === "ALREADY_A_MERCHANT")) {
+          setSubmitting(false);
+          setApiError(err instanceof ApiError ? err.uiMessage : "Something went wrong. Please try again.");
+          return;
+        }
+      }
+      setSubmitting(false);
+    }
+
     const next = stepAfter("business", roles) ?? "payout";
     router.push(STEP_PATH[next]);
   }
@@ -105,6 +146,7 @@ export function BusinessView({ email, sessionRoles }: { email: string; sessionRo
         <OnboardingSkeleton />
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          {apiError && <Alert variant="error">{apiError}</Alert>}
           <div className="space-y-1.5">
             <Label htmlFor="businessName" required>Business / brand name</Label>
             <Input
@@ -158,7 +200,7 @@ export function BusinessView({ email, sessionRoles }: { email: string; sessionRo
             {errors.website && <FormErrorText id="website-error">{errors.website}</FormErrorText>}
           </div>
 
-          <OnboardingNav onBack={back ? () => router.push(STEP_PATH[back]) : undefined} />
+          <OnboardingNav onBack={back ? () => router.push(STEP_PATH[back]) : undefined} loading={submitting} />
         </form>
       )}
     </OnboardingLayout>

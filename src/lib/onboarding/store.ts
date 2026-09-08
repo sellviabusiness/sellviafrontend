@@ -13,7 +13,7 @@ import type {
  * Stands in for:
  *   GET   /onboarding                       — current OnboardingRecord for the session's account
  *   POST  /onboarding/roles                 — saveRoles          { roles: string[] }
- *   PATCH /onboarding/profile               — saveCommonProfile  { fullName, country, phone }
+ *   PATCH /onboarding/profile               — saveCommonProfile  { fullName, phone }
  *   PATCH /onboarding/merchant              — saveMerchantDetails MerchantDetails
  *   PATCH /onboarding/creator               — saveCreatorDetails  CreatorDetails
  *   PATCH /onboarding/payout                — savePayout          PayoutData
@@ -29,6 +29,9 @@ import type {
  * Known mock-only deviation: every function takes `email` explicitly to key the localStorage
  * record — a real client calls these with no user param at all (identity comes from the session/
  * JWT the request carries); drop `email` from every call site when wiring the real API.
+ * `ensureRecordForAccount` (below) is the one exception/mock-only concern that has no real-API
+ * equivalent at all — a real backend keys onboarding progress by account id natively, so this
+ * whole problem (and function) disappears once that swap happens.
  *
  * DEV-ONLY frontend state, same pattern as lib/auth/mock/user-store.ts — a localStorage-backed
  * record per account, organized so a real backend integration later is a straight swap: each
@@ -58,6 +61,28 @@ function emailKey(email: string) {
 
 export function getOnboardingRecord(email: string): OnboardingRecord | null {
   return readAll()[emailKey(email)] ?? null;
+}
+
+/**
+ * ROOT CAUSE FOUND LIVE — every record here was keyed by email alone, nothing tying it to a
+ * specific ACCOUNT. Delete a Clerk user and sign up again with the same email (routine during
+ * testing; possible in production too) and the new account silently inherited the old one's
+ * entire onboarding progress from localStorage — roles, "Shopify connected", billing status,
+ * all of it — since nothing here could tell the two apart. This had already been patched twice
+ * at individual symptoms (the old role-select screen, the onboarding-complete cookie); this is
+ * the one place that actually closes it for every step, including ones not yet reported (billing
+ * and payout have the identical exposure, just not hit yet).
+ *
+ * Called on every onboarding step's mount (useOnboardingStep) — cheap and a no-op once the
+ * record's `id` already matches, so no "only run once" gate is needed the way role-select's
+ * auto-skip fix needed one.
+ */
+export function ensureRecordForAccount(email: string, accountId: string): void {
+  const all = readAll();
+  const key = emailKey(email);
+  if (all[key]?.id === accountId) return;
+  all[key] = { email, id: accountId, roles: [], complete: false };
+  writeAll(all);
 }
 
 function upsert(email: string, patch: Partial<OnboardingRecord>): OnboardingRecord {

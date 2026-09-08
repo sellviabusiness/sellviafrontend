@@ -3,16 +3,18 @@ import { getServerSession } from "@/lib/auth/session";
 import { STEP_PATH } from "@/lib/onboarding/steps";
 
 /**
- * Entry point: ALWAYS starts at /role-select, even when the session already carries a role from
- * Feature 1 registration — the user must be able to confirm or change it here, not just have it
- * silently reused (C1: "Do NOT skip this screen simply because a role already exists in the
- * session."). Whichever step is actually reached still course-corrects further forward via
- * useOnboardingStep if the user already made progress in an earlier visit (it has to check
- * localStorage client-side to know that — see lib/onboarding/steps.ts).
+ * Entry point: routes straight to /about-you, the first real onboarding step.
+ *
+ * There used to be a /role-select screen here first — removed outright, not just skipped
+ * client-side (that was the previous, weaker fix): the role is already decided at signup
+ * (RoleSelector there, required before an account can even be created), so re-asking it here was
+ * pure redundant friction with no data left to collect. Every step from here on already resolves
+ * roles from the session first (getEffectiveRoles, see lib/onboarding/steps.ts) — nothing
+ * downstream depended on a local write happening at this entry point.
  */
 export default async function OnboardingIndexPage() {
   const session = await getServerSession();
   if (!session) redirect("/login");
 
-  redirect(STEP_PATH["role-select"]);
+  redirect(STEP_PATH["about-you"]);
 }

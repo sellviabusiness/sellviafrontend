@@ -10,9 +10,9 @@ import { STEP_PATH, stepAfter } from "@/lib/onboarding/steps";
 /** Dual-role only, static celebration interstitial — no fields, one-directional (no Back). Only
  *  reachable once Merchant onboarding is done; guarded like every other step via
  *  useOnboardingStep so a direct URL hit before that can't skip ahead either. */
-export function TransitionView({ email, sessionRoles }: { email: string; sessionRoles: string[] }) {
+export function TransitionView({ email, id, sessionRoles }: { email: string; id: string; sessionRoles: string[] }) {
   const router = useRouter();
-  const { ready, roles } = useOnboardingStep("transition", email, sessionRoles);
+  const { ready, roles } = useOnboardingStep("transition", email, id, sessionRoles);
 
   function handleContinue() {
     const next = stepAfter("transition", roles) ?? "creator-profile";
@@ -22,7 +22,7 @@ export function TransitionView({ email, sessionRoles }: { email: string; session
   return (
     <OnboardingLayout step="transition" roles={roles}>
       <div className="flex flex-col items-center gap-3 py-4 text-center">
-        <PartyPopper className="h-8 w-8 text-accent" aria-hidden="true" />
+        <PartyPopper className="h-8 w-8 text-accent-foreground" aria-hidden="true" />
         <h1 className="font-[family-name:var(--font-heading)] text-xl font-semibold text-foreground">
           Great! Your merchant profile is ready.
         </h1>

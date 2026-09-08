@@ -1,24 +1,18 @@
-import "server-only";
-import { cookies } from "next/headers";
-import { ONBOARDING_COMPLETE_COOKIE } from "./status-cookie";
 import type { AppSession } from "@/lib/auth/types";
 
 /**
  * Server-side gate: is *this* authenticated account's onboarding complete?
  *
- * Prefers the session itself (AppSession.onboardingComplete — real for the mock provider,
- * best-effort for kratos, see lib/auth/types.ts's AuthProvider doc comment) over the
- * side-channel cookie, which is now a fallback rather than the primary source: kratos mode has
- * no confirmed write path for a session-native flag yet, so it keeps working off the cookie
- * until that exists. Checked with `!== undefined`, not truthiness, so a *real* `false` (mock
- * mode, onboarding genuinely incomplete) is trusted instead of silently falling through to the
- * cookie.
+ * ROOT CAUSE FOUND LIVE — this used to fall back to a side-channel, email-keyed, 1-year cookie
+ * whenever `session.onboardingComplete` was `undefined` (a leftover from the since-deleted
+ * kratos provider, which had no session-native write path). Both current providers now always
+ * give a real answer: mock always sets a boolean (`?? false` in the mock user store), and Clerk's
+ * `undefined` genuinely means "hasn't written publicMetadata.onboardingComplete yet" — i.e. not
+ * complete, not "go check somewhere else". The cookie fallback being keyed only by email, not the
+ * account, was the actual bug: re-registering a *deleted* Clerk account with the same email in
+ * the same browser inherited that old account's stale "complete" cookie and skipped the entire
+ * onboarding flow for the brand-new one. No fallback needed any more — trust the session.
  */
 export async function isOnboardingComplete(session: AppSession): Promise<boolean> {
-  if (session.onboardingComplete !== undefined) return session.onboardingComplete;
-
-  const store = await cookies();
-  const raw = store.get(ONBOARDING_COMPLETE_COOKIE)?.value;
-  if (!raw) return false;
-  return decodeURIComponent(raw).toLowerCase() === session.email.toLowerCase();
+  return session.onboardingComplete ?? false;
 }

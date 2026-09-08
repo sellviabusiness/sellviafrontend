@@ -1,7 +1,6 @@
 export interface CommonProfile {
   fullName: string;
   email: string;
-  country: string;
   phone: string;
 }
 
@@ -61,7 +60,6 @@ export interface PayoutData {
 export type ConnectionStatus = "not_connected" | "connecting" | "connected" | "error";
 
 export type StepId =
-  | "role-select"
   | "about-you"
   | "business"
   | "billing"
@@ -73,9 +71,15 @@ export type StepId =
 
 export interface OnboardingRecord {
   email: string;
-  /** The role(s) this onboarding run covers — from the authenticated session where available,
-   *  or self-selected/adjusted on the role-select step (see AuthProvider.updateRoles for how an
-   *  actual *change*, not just a confirm, propagates back into the session). */
+  /** The account (Clerk user id / mock user id) this record belongs to — see
+   *  lib/onboarding/store.ts's ensureRecordForAccount for why this exists: without it, a record
+   *  is only ever keyed by email, and a deleted-then-recreated account reusing the same email
+   *  silently inherits the old one's entire onboarding progress. Optional only so older
+   *  already-stored records (from before this field existed) don't fail to parse — treated the
+   *  same as a mismatch (stale) the first time they're read. */
+  id?: string;
+  /** The role(s) this onboarding run covers — from the authenticated session (chosen once, at
+   *  signup); see getEffectiveRoles in steps.ts. */
   roles: string[];
   commonProfile?: CommonProfile;
   merchant?: MerchantDetails;

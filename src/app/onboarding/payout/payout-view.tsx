@@ -30,9 +30,9 @@ const PAYOUT_METHODS = [
  * lib/onboarding/payout-gate.ts (the Feature-4-facing "are this creator's links activated?"
  * check) reads — so the blocking state below is a real, checkable status, not just copy.
  */
-export function PayoutView({ email, sessionRoles }: { email: string; sessionRoles: string[] }) {
+export function PayoutView({ email, id, sessionRoles }: { email: string; id: string; sessionRoles: string[] }) {
   const router = useRouter();
-  const { record, ready, roles } = useOnboardingStep("payout", email, sessionRoles);
+  const { record, ready, roles } = useOnboardingStep("payout", email, id, sessionRoles);
 
   const [method, setMethod] = useState<PayoutData["method"] | "">("");
   const [bankAccountName, setBankAccountName] = useState("");

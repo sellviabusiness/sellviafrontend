@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getOnboardingRecord } from "@/lib/onboarding/store";
+import { ensureRecordForAccount, getOnboardingRecord } from "@/lib/onboarding/store";
 import { getEffectiveRoles, isStepUnlocked, nextIncompleteStep, STEP_PATH } from "@/lib/onboarding/steps";
 import type { OnboardingRecord, StepId } from "@/lib/onboarding/types";
 
@@ -13,13 +13,17 @@ import type { OnboardingRecord, StepId } from "@/lib/onboarding/types";
  * direct URL) — Requirement §8's bypass-prevention, applied within the onboarding flow itself,
  * not just at its /dashboard boundary. Revisiting an *earlier*, already-completed step is never
  * blocked — only jumping ahead is.
+ *
+ * `accountId` (added alongside `email`) exists purely for ensureRecordForAccount — see its own
+ * doc comment in lib/onboarding/store.ts for the stale-record bug this closes.
  */
-export function useOnboardingStep(step: StepId, email: string, sessionRoles: string[]) {
+export function useOnboardingStep(step: StepId, email: string, accountId: string, sessionRoles: string[]) {
   const router = useRouter();
   const [record, setRecord] = useState<OnboardingRecord | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    ensureRecordForAccount(email, accountId);
     const current = getOnboardingRecord(email);
     const roles = getEffectiveRoles(sessionRoles, current);
 
@@ -34,8 +38,8 @@ export function useOnboardingStep(step: StepId, email: string, sessionRoles: str
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecord(current);
     setReady(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once per step/email
-  }, [step, email]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once per step/email/account
+  }, [step, email, accountId]);
 
   return {
     record,

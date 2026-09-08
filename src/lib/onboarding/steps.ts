@@ -9,7 +9,7 @@ import type { OnboardingRecord, StepId } from "./types";
  *
  * Design decision: "about-you" and "payout" are asked once per person, not once per role. The
  * spec describes Merchant and Creator onboarding as two standalone 3-step flows, which read
- * literally would re-ask name/email/phone/country and payout method a second time on a dual-role
+ * literally would re-ask name/email/phone and payout method a second time on a dual-role
  * account. That contradicts the spec's own "don't make the user feel like they're filling out a
  * huge form" principle and the same account only has one identity and one payout preference —
  * so both are shared across the whole run. Flagged here for visibility, not silently guessed.
@@ -26,7 +26,6 @@ export function getStepSequence(roles: string[]): StepId[] {
 }
 
 export const STEP_PATH: Record<StepId, string> = {
-  "role-select": "/onboarding/role-select",
   "about-you": "/onboarding/about-you",
   business: "/onboarding/business",
   billing: "/onboarding/billing",
@@ -38,7 +37,6 @@ export const STEP_PATH: Record<StepId, string> = {
 };
 
 export const STEP_LABEL: Record<StepId, string> = {
-  "role-select": "Get started",
   "about-you": "About you",
   business: "Your business",
   billing: "Billing connect",
@@ -67,8 +65,6 @@ export function isStepUnlocked(step: StepId, roles: string[], record: Onboarding
 export function isStepComplete(step: StepId, record: OnboardingRecord | null): boolean {
   if (!record) return false;
   switch (step) {
-    case "role-select":
-      return record.roles.length > 0;
     case "about-you":
       return Boolean(record.commonProfile);
     case "business":
@@ -125,9 +121,10 @@ export function stepBefore(step: StepId, roles: string[]): StepId | undefined {
 }
 
 /**
- * The roles this onboarding run actually covers: the authenticated session's roles where the
- * account has any (don't re-ask what Feature 1 already collected), falling back to whatever was
- * self-selected on the role-select step when the session has none.
+ * The roles this onboarding run actually covers: the authenticated session's roles (chosen once,
+ * at signup — RoleSelector there, required before an account can be created; there's no
+ * onboarding-side role step any more), falling back to a local record's roles only for the
+ * unlikely case a session genuinely has none (e.g. an account predating that requirement).
  */
 export function getEffectiveRoles(sessionRoles: string[], record: OnboardingRecord | null): string[] {
   return sessionRoles.length > 0 ? sessionRoles : (record?.roles ?? []);
