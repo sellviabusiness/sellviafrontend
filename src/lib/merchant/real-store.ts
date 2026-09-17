@@ -44,11 +44,19 @@ export async function prefillOffer(productUrl: string): Promise<PrefillResult> {
 
 export interface ProductRead {
   id: string;
+  merchantProfileId: string;
+  shopifyProductId: string | null;
+  shopifyVariantId: string | null;
   name: string;
+  description: string | null;
   priceCents: number;
   currency: string;
   imageUrl: string | null;
+  productUrl: string | null;
   category: "physical" | "digital" | null;
+  status: "active" | "archived";
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** Persists a Product from a Shopify URL (unlike `prefillOffer`, a real write) — required before
@@ -72,6 +80,47 @@ export interface CreateProductInput {
  *  applicable and the merchant's own typed-in fields are the only source of truth. */
 export async function createProduct(input: CreateProductInput): Promise<ProductRead> {
   return apiRequest<ProductRead>("/products", { method: "POST", body: input });
+}
+
+/** The merchant's own product catalog — feeds the Products page (list) and the offer-creation
+ *  product picker (Task 6). Every status included; the Products page itself decides what to
+ *  show/hide for "archived". */
+export async function listProducts(): Promise<ProductRead[]> {
+  return apiRequest<ProductRead[]>("/products");
+}
+
+export async function getProduct(productId: string): Promise<ProductRead> {
+  return apiRequest<ProductRead>(`/products/${productId}`);
+}
+
+/** Imports a Product from an item already resolved via `listShopifyCatalog` — the
+ *  "browse your Shopify catalog" tab's import call, distinct from `importProduct`'s
+ *  URL-paste path even though both hit the same endpoint (different body shape). */
+export async function importProductByShopifyVariant(
+  shopifyProductId: string,
+  shopifyVariantId: string,
+): Promise<ProductRead> {
+  return apiRequest<ProductRead>("/products/import", {
+    method: "POST",
+    body: { shopifyProductId, shopifyVariantId },
+  });
+}
+
+export interface ShopifyCatalogItemRead {
+  shopifyProductId: string;
+  shopifyVariantId: string;
+  name: string;
+  priceCents: number;
+  currency: string;
+  imageUrl: string | null;
+  productUrl: string;
+}
+
+/** 409 SHOPIFY_NOT_CONNECTED surfaces as a thrown ApiError with that `.code` — callers gate the
+ *  "browse catalog" tab on Task 8's connection status instead of relying on this throw alone, but
+ *  must still handle it (a connection can be revoked between page load and this call). */
+export async function listShopifyCatalog(): Promise<ShopifyCatalogItemRead[]> {
+  return apiRequest<ShopifyCatalogItemRead[]>("/products/shopify-catalog");
 }
 
 export interface CreateRealOfferInput {
