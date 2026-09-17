@@ -2,7 +2,7 @@
 
 import { Menu } from "lucide-react";
 import { SellViaLogo } from "@/components/reference/brand/sellvia-logo";
-import { ThemeToggle } from "@/components/reference/theme/theme-toggle";
+// import { ThemeToggle } from "@/components/reference/theme/theme-toggle"; // hidden for now — see below
 import { LogoutButton } from "@/app/dashboard/logout-button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -14,7 +14,7 @@ export function AdminTopbar({ email, onMenuClick }: { email: string; onMenuClick
   const initial = email.charAt(0).toUpperCase();
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border px-4 sm:px-6">
+    <header className="flex h-16 shrink-0 items-center gap-3 bg-[#FAFAFA] px-4 sm:px-6">
       <button
         type="button"
         onClick={onMenuClick}
@@ -28,7 +28,9 @@ export function AdminTopbar({ email, onMenuClick }: { email: string; onMenuClick
       <span className="hidden rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground sm:inline">Admin</span>
 
       <div className="ml-auto flex items-center gap-2 sm:gap-3">
-        <ThemeToggle />
+        {/* Dark mode toggle hidden for now, at explicit request — dark mode hasn't been checked
+            against this session's neo-brutalist redesign yet. Uncomment (and the import above)
+            once it has. */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button

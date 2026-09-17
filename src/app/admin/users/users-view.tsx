@@ -29,7 +29,7 @@ export function UsersView() {
     <div className="space-y-6">
       <div>
         <h1 className="font-[family-name:var(--font-heading)] text-xl font-semibold text-foreground">Users</h1>
-        <p className="text-sm text-muted-foreground">Every account on the platform, across roles.</p>
+        <p className="text-sm text-muted-foreground">Merchant and creator accounts — admins aren&apos;t managed here.</p>
       </div>
 
       <div className="max-w-sm">

@@ -10,5 +10,5 @@ export default async function NewOfferPage() {
   const session = await getServerSession();
   if (!session) redirect("/login");
 
-  return isMockMode ? <NewOfferView email={session.email} /> : <RealNewOfferView />;
+  return isMockMode ? <NewOfferView email={session.email} /> : <RealNewOfferView email={session.email} />;
 }

@@ -3,10 +3,10 @@ import type { RealOffer, RealApplication, RealRefundRequest } from "@/lib/mercha
 import type {
   RealUser,
   RealModerationFlag,
-  RealWaitlistEntry,
   RealMarketplaceKPIs,
   RealFunnel,
   RealMonthlyPnLReport,
+  AdminUserStats,
 } from "./types";
 
 /**
@@ -21,12 +21,53 @@ import type {
 // Users
 // ---------------------------------------------------------------------------
 
-export async function listUsers(): Promise<RealUser[]> {
-  return apiRequest<RealUser[]>("/admin/users");
+export interface ListUsersParams {
+  /** Substring match, case-insensitive — server-side (2026-09-13). */
+  email?: string;
+  role?: "merchant" | "creator" | "admin";
+  suspended?: boolean;
+  /** 1–200, server default 50. */
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * BUG FOUND LIVE — admin accounts showing up in a screen meant for moderating merchants/creators
+ * is how an admin suspending their own account (or another admin's) via this exact list ever
+ * became possible in the first place. Backend's `GET /admin/users` returns "every account on the
+ * platform" literally, admins included — filtered out here, at the one place every caller of this
+ * function goes through, rather than patched per-view. RealUserDetailView's own self-suspend guard
+ * stays too (defense in depth for anyone hitting a detail URL directly), but admins should never
+ * have been reachable from this list to begin with.
+ *
+ * BUG FOUND LIVE (2026-09-13) — this used to fetch one unfiltered page (server default limit 50)
+ * and search client-side against just that page: silently wrong for any account past the first
+ * 50, real accounts included since before a recent cleanup. Backend now takes real `email`/`role`/
+ * `suspended`/`limit`/`offset` query params — this just passes them through instead of filtering
+ * a client-side array. Caller reads `result.length === (params.limit ?? 50)` as a "there might be
+ * more" signal for pagination — backend doesn't return a total count or hasMore flag.
+ */
+export async function listUsers(params: ListUsersParams = {}): Promise<RealUser[]> {
+  const query = new URLSearchParams();
+  if (params.email) query.set("email", params.email);
+  if (params.role) query.set("role", params.role);
+  if (params.suspended !== undefined) query.set("suspended", String(params.suspended));
+  if (params.limit !== undefined) query.set("limit", String(params.limit));
+  if (params.offset !== undefined) query.set("offset", String(params.offset));
+  const qs = query.toString();
+  const users = await apiRequest<RealUser[]>(`/admin/users${qs ? `?${qs}` : ""}`);
+  return users.filter((u) => !u.isAdmin);
 }
 
 export async function getUser(userId: string): Promise<RealUser> {
   return apiRequest<RealUser>(`/admin/users/${userId}`);
+}
+
+/** GET /admin/users/{userId}/stats (2026-09-13) — 404 NO_PROFILE means the account never picked
+ *  a role (empty state, not an error); 404 NOT_FOUND means a bad id or a real data inconsistency
+ *  (error state) — both surface as this same thrown ApiError, distinguished by `.code`. */
+export async function getUserStats(userId: string): Promise<AdminUserStats> {
+  return apiRequest<AdminUserStats>(`/admin/users/${userId}/stats`);
 }
 
 export async function suspendUser(userId: string): Promise<RealUser> {
@@ -148,18 +189,6 @@ export async function actOnFlag(flagId: string, note: string, suspendUserId?: st
     method: "POST",
     body: { note, suspendUserId },
   });
-}
-
-// ---------------------------------------------------------------------------
-// Waitlist — no mock UI ever existed for this; net-new, not a swap
-// ---------------------------------------------------------------------------
-
-export async function listWaitlist(): Promise<RealWaitlistEntry[]> {
-  return apiRequest<RealWaitlistEntry[]>("/admin/waitlist");
-}
-
-export async function inviteWaitlistEntry(entryId: string): Promise<RealWaitlistEntry> {
-  return apiRequest<RealWaitlistEntry>(`/admin/waitlist/${entryId}/invite`, { method: "POST" });
 }
 
 // ---------------------------------------------------------------------------

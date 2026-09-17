@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { clerkMiddleware, clerkClient } from "@clerk/nextjs/server"
+import { ipAddress } from "@vercel/functions"
 
 import { AUTH_MODE } from "@/lib/auth/config"
 import { getMockSessionFromCookieHeader } from "@/lib/auth/proxy-session"
@@ -28,14 +29,66 @@ const PROTECTED: Array<{ prefix: string; role: Role }> = [
 
 type GateMatch = "account" | { role: Role }
 
+// BUG FOUND LIVE (surfaced while adding /admin-login below) — `pathname.startsWith(p.prefix)` has
+// no boundary check, so "/admin-login".startsWith("/admin") is true: the new IP-restricted login
+// route would have been silently swept into the *admin role* gate (redirected to /login before
+// its own IP check ever ran, and requiring an already-authenticated admin session to reach a page
+// whose whole purpose is logging in as one). Same latent hole existed for "/account" vs some
+// future "/accountability"-shaped route, just never hit. Fixed once, here, for every prefix.
+function hasPathPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`)
+}
+
 /** Whether `pathname` is one this file actually gates at all — /account (any session) or one of
  *  PROTECTED's role-specific prefixes. Checked before doing any session lookup: the matcher
  *  below runs on nearly every request (see its own doc comment), and most of those paths need
  *  no gating, so there's no reason to pay for a session lookup on them. */
 function matchGate(pathname: string): GateMatch | null {
-  if (pathname.startsWith("/account")) return "account"
-  const match = PROTECTED.find((p) => pathname.startsWith(p.prefix))
+  if (hasPathPrefix(pathname, "/account")) return "account"
+  const match = PROTECTED.find((p) => hasPathPrefix(pathname, p.prefix))
   return match ? { role: match.role } : null
+}
+
+// ADMIN_LOGIN_PATH is deliberately NOT under /admin — see hasPathPrefix's own note above for why
+// that would have collided with the admin role gate even with the boundary fix (the whole point
+// of this page is reaching it *without* an admin session yet).
+const ADMIN_LOGIN_PATH = "/admin-login"
+
+/**
+ * Fails CLOSED by design: an unset or empty ADMIN_LOGIN_ALLOWED_IPS blocks every request rather
+ * than silently leaving an "IP-restricted" route wide open because nobody configured it yet — set
+ * that env var (comma-separated IPs) before relying on this in any deployed environment.
+ *
+ * `ipAddress()` (`@vercel/functions`, confirmed this app deploys to Vercel — VERCEL_AUTOMATION_
+ * BYPASS_SECRET in .env.local) reads ONLY the `x-real-ip` header Vercel's own edge sets, rather
+ * than this file trusting `x-forwarded-for` by hand — checked its source directly: Vercel's edge
+ * strips any client-supplied copy of that header before setting its own, so this is trustworthy
+ * on Vercel specifically. It would NOT be safe to trust blindly on a deployment with no edge/proxy
+ * in front verified to do the same.
+ *
+ * BUG FOUND LIVE — that header is ONLY ever set by Vercel's actual edge. `next dev` (this repo's
+ * own dev script) has no edge in front of it at all, so `ipAddress()` returned `undefined` for
+ * every local request regardless of the allowlist — a correctly-configured IP still got blocked.
+ *
+ * SECURITY FIX (caught in review) — this used to gate the dev-bypass on `process.env.VERCEL`
+ * instead of `NODE_ENV`. That's a real fail-open bug, not just a naming choice: `VERCEL` is
+ * Vercel-specific, so if this app were ever deployed anywhere else — a VPS, another cloud host, a
+ * misconfigured Vercel project missing that var — a genuine PRODUCTION deployment would silently
+ * have zero IP restriction forever, with nothing announcing it. `NODE_ENV === "production"` is
+ * the actual dev/prod signal (Next.js sets it from `next build` itself, not from any platform),
+ * so it stays correct regardless of *where* a production build ends up running. Only skipped
+ * under `next dev` specifically — where only this machine can reach its own server anyway, so
+ * there's nothing real to gate — never skipped for any other reason.
+ */
+function isAdminLoginIpAllowed(request: NextRequest): boolean {
+  if (process.env.NODE_ENV !== "production") return true
+  const allowlist = (process.env.ADMIN_LOGIN_ALLOWED_IPS ?? "")
+    .split(",")
+    .map((ip) => ip.trim())
+    .filter(Boolean)
+  if (allowlist.length === 0) return false
+  const ip = ipAddress(request)
+  return ip !== undefined && allowlist.includes(ip)
 }
 
 /**
@@ -64,7 +117,16 @@ function gate(match: GateMatch, session: AppSession | null, request: NextRequest
   return NextResponse.next()
 }
 
+// Same 404 (not 403) every other role-mismatch in this file already uses — never confirms the
+// route exists to whoever's IP isn't on the list.
+function blockAdminLoginRequest(): NextResponse {
+  return new NextResponse(null, { status: 404 })
+}
+
 async function mockProxy(request: NextRequest): Promise<NextResponse> {
+  if (request.nextUrl.pathname === ADMIN_LOGIN_PATH && !isAdminLoginIpAllowed(request)) {
+    return blockAdminLoginRequest()
+  }
   const match = matchGate(request.nextUrl.pathname)
   if (!match) return NextResponse.next()
   const session = getMockSessionFromCookieHeader(request.headers.get("cookie") ?? "")
@@ -86,6 +148,9 @@ async function mockProxy(request: NextRequest): Promise<NextResponse> {
 // the extra network round trip to Clerk's API on the large majority of requests that don't need it.
 function buildClerkProxy() {
   return clerkMiddleware(async (auth, request) => {
+    if (request.nextUrl.pathname === ADMIN_LOGIN_PATH && !isAdminLoginIpAllowed(request)) {
+      return blockAdminLoginRequest()
+    }
     const match = matchGate(request.nextUrl.pathname)
     if (!match) return NextResponse.next()
 

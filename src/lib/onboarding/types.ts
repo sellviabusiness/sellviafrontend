@@ -33,25 +33,6 @@ export interface CreatorDetails {
 }
 
 /**
- * Dummy payout details only — no real payment processing wired up (explicitly out of scope, and
- * "do NOT pretend a real payment provider integration exists" per the task). Method set is
- * Pakistan-specific per the task's own explicit requirement — PayPal dropped entirely, not kept
- * alongside these. One payout preference per person, shared across Merchant and Creator earnings
- * rather than asked twice on a dual-role account — see Playbook 02 "Design decisions." Shape is
- * deliberately flat/simple so swapping in a real payout provider later (see
- * lib/onboarding/integrations/payout-provider.ts) is a straight field-for-field replacement.
- */
-export interface PayoutData {
-  method: "bank" | "jazzcash" | "easypaisa";
-  bankAccountName?: string;
-  bankAccountNumber?: string;
-  bankName?: string;
-  /** JazzCash/EasyPaisa are mobile-wallet numbers, not bank account fields. */
-  mobileWalletNumber?: string;
-  mobileWalletAccountName?: string;
-}
-
-/**
  * Shared shape for every swappable integration point (C2 billing, C3 store connect, C4 payout
  * activation) — same four states cover "hasn't started" through "provider said no", so the UI
  * (connection-status.tsx) and the gate-status logic (payout-gate.ts) don't need one bespoke
@@ -62,11 +43,9 @@ export type ConnectionStatus = "not_connected" | "connecting" | "connected" | "e
 export type StepId =
   | "about-you"
   | "business"
-  | "billing"
   | "store-connect"
   | "transition"
   | "creator-profile"
-  | "payout"
   | "complete";
 
 export interface OnboardingRecord {
@@ -84,14 +63,13 @@ export interface OnboardingRecord {
   commonProfile?: CommonProfile;
   merchant?: MerchantDetails;
   creator?: CreatorDetails;
-  payout?: PayoutData;
-  /** C2 — Switch billing connect. */
-  billingStatus?: ConnectionStatus;
   /** C3 — Shopify/store connect. */
   storeConnectionStatus?: ConnectionStatus;
   storeConnectionError?: string;
-  /** C4 — the payout *activation* state (post-form-submission), distinct from `payout` (the
-   *  form data itself) — see lib/onboarding/integrations/payout-provider.ts. */
+  /** C4 — payout *activation* state, read/written by Creator Settings → Payout's mock
+   *  counterpart (lib/onboarding/integrations/payout-provider.ts) — the onboarding payout step
+   *  that used to set this alongside a `payout` form-data field is gone; only the activation
+   *  status survives, now set directly from that settings screen instead. */
   payoutStatus?: ConnectionStatus;
   complete: boolean;
 }

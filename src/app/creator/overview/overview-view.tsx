@@ -90,12 +90,12 @@ export function OverviewView({ email }: { email: string }) {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Clicks" value={clicks} icon={<MousePointerClick className="h-4 w-4" aria-hidden="true" />} />
-        <StatCard label="Sales" value={formatCurrency(totalSales)} icon={<ShoppingBag className="h-4 w-4" aria-hidden="true" />} />
-        <StatCard label="Earnings (billed)" value={formatCurrency(earnings.billedAndCharged)} icon={<Wallet className="h-4 w-4" aria-hidden="true" />} />
-        <Card className="p-5">
-          <p className="text-sm text-muted-foreground">Payout progress</p>
-          <p className="mt-2 font-[family-name:var(--font-heading)] text-lg font-semibold text-foreground">
+        <StatCard tone="yellow" label="Clicks" value={clicks} icon={<MousePointerClick className="h-4 w-4" aria-hidden="true" />} />
+        <StatCard tone="green" label="Sales" value={formatCurrency(totalSales)} icon={<ShoppingBag className="h-4 w-4" aria-hidden="true" />} />
+        <StatCard tone="lavender" label="Earnings (billed)" value={formatCurrency(earnings.billedAndCharged)} icon={<Wallet className="h-4 w-4" aria-hidden="true" />} />
+        <Card className="bg-[var(--pastel-blue)] p-5 text-[var(--pastel-blue-foreground)]">
+          <p className="text-sm text-inherit opacity-70">Payout progress</p>
+          <p className="mt-2 font-[family-name:var(--font-heading)] text-lg font-semibold text-inherit">
             {formatCurrency(earnings.billedAndCharged)} / {formatCurrency(PAYOUT_THRESHOLD_PKR)}
           </p>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-foreground/10">
@@ -110,21 +110,27 @@ export function OverviewView({ email }: { email: string }) {
           {!hasActivity ? (
             <p className="text-sm text-muted-foreground">No applications yet.</p>
           ) : (
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="flex flex-col items-center gap-1 rounded-[var(--radius-sm)] border border-border p-3">
-                <Clock className="h-4 w-4 text-muted-foreground-2" aria-hidden="true" />
-                <span className="text-lg font-semibold text-foreground">{statusCounts.pending}</span>
-                <span className="text-xs text-muted-foreground-2">Pending</span>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col items-center gap-2 rounded-[var(--radius-md)] border-2 border-border bg-[var(--pastel-yellow)] p-4 text-center text-[var(--pastel-yellow-foreground)]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-border bg-card">
+                  <Clock className="h-4 w-4 text-inherit" aria-hidden="true" />
+                </span>
+                <span className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-inherit">{statusCounts.pending}</span>
+                <span className="text-xs font-medium text-inherit opacity-80">Pending</span>
               </div>
-              <div className="flex flex-col items-center gap-1 rounded-[var(--radius-sm)] border border-border p-3">
-                <CheckCircle2 className="h-4 w-4 text-success" aria-hidden="true" />
-                <span className="text-lg font-semibold text-foreground">{statusCounts.approved}</span>
-                <span className="text-xs text-muted-foreground-2">Approved</span>
+              <div className="flex flex-col items-center gap-2 rounded-[var(--radius-md)] border-2 border-border bg-[var(--pastel-green)] p-4 text-center text-[var(--pastel-green-foreground)]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-border bg-card">
+                  <CheckCircle2 className="h-4 w-4 text-inherit" aria-hidden="true" />
+                </span>
+                <span className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-inherit">{statusCounts.approved}</span>
+                <span className="text-xs font-medium text-inherit opacity-80">Approved</span>
               </div>
-              <div className="flex flex-col items-center gap-1 rounded-[var(--radius-sm)] border border-border p-3">
-                <XCircle className="h-4 w-4 text-danger" aria-hidden="true" />
-                <span className="text-lg font-semibold text-foreground">{statusCounts.rejected}</span>
-                <span className="text-xs text-muted-foreground-2">Rejected</span>
+              <div className="flex flex-col items-center gap-2 rounded-[var(--radius-md)] border-2 border-border bg-[var(--pastel-pink)] p-4 text-center text-[var(--pastel-pink-foreground)]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-border bg-card">
+                  <XCircle className="h-4 w-4 text-inherit" aria-hidden="true" />
+                </span>
+                <span className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-inherit">{statusCounts.rejected}</span>
+                <span className="text-xs font-medium text-inherit opacity-80">Rejected</span>
               </div>
             </div>
           )}

@@ -13,6 +13,7 @@ import { getOverviewStats, getOverviewTrends, getOffers, getRecentActivity, getD
 import { formatCurrency, formatRelativeTime } from "@/lib/merchant/format";
 import { getOnboardingRecord } from "@/lib/onboarding/store";
 import { getTimeGreeting, firstName } from "@/lib/reference/greeting";
+import { cn } from "@/lib/utils";
 import type { ActivityItem, OverviewTrends } from "@/lib/merchant/store";
 import type { OverviewStats, Offer } from "@/lib/merchant/types";
 
@@ -109,10 +110,10 @@ export function OverviewView({ email, onboardingComplete }: { email: string; onb
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <TrendStatCard label="Total Sales" value={formatCurrency(stats.totalSales)} trend={trends.totalSales} />
-        <TrendStatCard label="Active Campaigns" value={stats.activeOffers} trend={trends.activeOffers} />
-        <TrendStatCard label="Applications" value={stats.totalApplications} trend={trends.applications} />
-        <TrendStatCard label="Total Payouts" value={formatCurrency(stats.totalSpend)} trend={trends.totalPayouts} />
+        <TrendStatCard tone="yellow" label="Total Sales" value={formatCurrency(stats.totalSales)} trend={trends.totalSales} />
+        <TrendStatCard tone="green" label="Active Campaigns" value={stats.activeOffers} trend={trends.activeOffers} />
+        <TrendStatCard tone="lavender" label="Applications" value={stats.totalApplications} trend={trends.applications} />
+        <TrendStatCard tone="blue" label="Total Payouts" value={formatCurrency(stats.totalSpend)} trend={trends.totalPayouts} />
       </div>
 
       {!hasOffers ? (
@@ -177,11 +178,30 @@ export function OverviewView({ email, onboardingComplete }: { email: string; onb
  * always (no historical status snapshot exists to compare against at all, see
  * OverviewTrends.activeOffers's doc comment) — both simply render no trend line at all now.
  */
-function TrendStatCard({ label, value, trend }: { label: string; value: string | number; trend: number | null }) {
+const TREND_TONE_CLASSES = {
+  yellow: "bg-[var(--pastel-yellow)] text-[var(--pastel-yellow-foreground)]",
+  green: "bg-[var(--pastel-green)] text-[var(--pastel-green-foreground)]",
+  lavender: "bg-[var(--pastel-lavender)] text-[var(--pastel-lavender-foreground)]",
+  pink: "bg-[var(--pastel-pink)] text-[var(--pastel-pink-foreground)]",
+  blue: "bg-[var(--pastel-blue)] text-[var(--pastel-blue-foreground)]",
+} as const;
+
+function TrendStatCard({
+  label,
+  value,
+  trend,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  trend: number | null;
+  tone?: keyof typeof TREND_TONE_CLASSES;
+}) {
+  const tinted = Boolean(tone);
   return (
-    <Card className="p-5">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-2 font-[family-name:var(--font-heading)] text-2xl font-semibold text-foreground">{value}</p>
+    <Card className={cn("p-5", tone && TREND_TONE_CLASSES[tone])}>
+      <p className={cn("text-sm", tinted ? "text-inherit opacity-70" : "text-muted-foreground")}>{label}</p>
+      <p className={cn("mt-2 font-[family-name:var(--font-heading)] text-2xl font-semibold", tinted ? "text-inherit" : "text-foreground")}>{value}</p>
       {trend !== null && (
         <p className={`mt-1 flex items-center gap-1 text-xs font-medium ${trend >= 0 ? "text-success" : "text-danger"}`}>
           {trend >= 0 ? <TrendingUp className="h-3 w-3" aria-hidden="true" /> : <TrendingDown className="h-3 w-3" aria-hidden="true" />}

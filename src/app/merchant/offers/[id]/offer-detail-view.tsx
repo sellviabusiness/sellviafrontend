@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, MousePointerClick } from "lucide-react";
+import { MousePointerClick } from "lucide-react";
 import { Card } from "@/components/reference/ui/card";
 import { Button, buttonVariants } from "@/components/reference/ui/button";
 import { StatCard } from "@/components/reference/ui/stat-card";
@@ -12,7 +12,6 @@ import { ConfirmDialog } from "@/components/reference/ui/confirm-dialog";
 import { TrackingLinkBox } from "@/components/merchant/tracking-link-box";
 import { getOffer, getOfferStats, setOfferStatus, deleteOffer, recordOfferClick } from "@/lib/merchant/store";
 import { formatCurrency, formatPercent } from "@/lib/merchant/format";
-import { getOnboardingRecord } from "@/lib/onboarding/store";
 import type { Offer } from "@/lib/merchant/types";
 
 const STATUS_TONE: Record<Offer["status"], StatusTone> = {
@@ -24,19 +23,17 @@ const STATUS_TONE: Record<Offer["status"], StatusTone> = {
 
 /**
  * D4 — status + commission, performance stats, application/sale summaries, pause/resume/end/edit
- * actions, and a billing-advisory banner in place of a literal "auto-paused" trigger: this build
- * doesn't model a real system-initiated pause event (no inventory/stock system, and the real
- * snippet-verification + Paddle-billing draft→live gates are the explicit MVP-demo skip per
- * Playbook 04 §2b) — so rather than fabricate a fake "auto-paused" state, this shows a real,
- * checkable advisory instead: if the merchant's Switch billing (onboarding C2) isn't connected,
- * a banner says so and links to Settings → Billing. Flagged here as the deliberate interpretation
- * of D4's "auto-paused banner where applicable" line, not a silent guess.
+ * actions. Used to also show a billing-advisory banner here (D4's "auto-paused banner where
+ * applicable," interpreted as "warn if Switch billing (onboarding C2) isn't connected" — flagged
+ * at the time as a deliberate interpretation, not a confirmed one). BACKEND CONFIRMED LIVE:
+ * there's no such "connected" state at all — Switch bills per invoice cycle, paid on demand, never
+ * pre-connected — so that advisory had nothing real left to check. Removed along with the C2
+ * concept itself rather than left pointing at a status that can't exist.
  */
 export function OfferDetailView({ email, offerId }: { email: string; offerId: string }) {
   const router = useRouter();
   const [offer, setOffer] = useState<Offer | null | undefined>(undefined);
   const [stats, setStats] = useState<Awaited<ReturnType<typeof getOfferStats>> | null>(null);
-  const [billingConnected, setBillingConnected] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   async function refresh() {
@@ -48,7 +45,6 @@ export function OfferDetailView({ email, offerId }: { email: string; offerId: st
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
-    setBillingConnected(getOnboardingRecord(email)?.billingStatus === "connected");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [email, offerId]);
 
@@ -77,18 +73,6 @@ export function OfferDetailView({ email, offerId }: { email: string; offerId: st
 
   return (
     <div className="space-y-6">
-      {!billingConnected && (
-        <div className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-accent/30 bg-accent/10 px-4 py-3 text-sm">
-          <AlertTriangle className="h-4 w-4 shrink-0 text-accent-foreground" aria-hidden="true" />
-          <span className="flex-1 text-foreground">
-            Billing isn&apos;t connected — commission on new sales can&apos;t be collected until it is.
-          </span>
-          <Link href="/merchant/settings/billing" className="font-medium text-accent-foreground underline underline-offset-2">
-            Connect billing
-          </Link>
-        </div>
-      )}
-
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="mb-1 flex items-center gap-2">

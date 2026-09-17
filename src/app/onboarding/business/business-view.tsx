@@ -127,7 +127,7 @@ export function BusinessView({ email, id, sessionRoles }: { email: string; id: s
       setSubmitting(false);
     }
 
-    const next = stepAfter("business", roles) ?? "payout";
+    const next = stepAfter("business", roles) ?? "complete";
     router.push(STEP_PATH[next]);
   }
 

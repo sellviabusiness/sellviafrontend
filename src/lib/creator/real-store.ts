@@ -6,6 +6,10 @@ import type {
   RealPayoutMethodState,
   UpdateRealPayoutMethodInput,
   RealCreatorDashboard,
+  RealCreatorTimeseriesPoint,
+  RealCreatorEarningsBreakdown,
+  TimeseriesGranularity,
+  TimeseriesRange,
 } from "@/lib/merchant/types";
 
 /**
@@ -81,8 +85,27 @@ export async function updatePayoutMethod(input: UpdateRealPayoutMethodInput): Pr
   return apiRequest<RealPayoutMethodState>("/users/creator-profile/payout-method", { method: "PATCH", body: input });
 }
 
-/** Own data only — no time series, no activity feed. See RealCreatorDashboard's own doc comment,
- *  types.ts. */
-export async function getCreatorDashboard(): Promise<RealCreatorDashboard> {
-  return apiRequest<RealCreatorDashboard>("/analytics/creator-dashboard");
+/** Own data only. `withDeltas` requests `?compareTo=previous_period` (shipped 2026-09, commit
+ *  1ad2951) — see RealCreatorDashboard's own doc comment, types.ts, for the `*DeltaPercent`
+ *  fields this unlocks and getMerchantDashboard's doc comment (real-store.ts, merchant) for the
+ *  same param on the merchant side. */
+export async function getCreatorDashboard(withDeltas = false): Promise<RealCreatorDashboard> {
+  const query = withDeltas ? "?compareTo=previous_period" : "";
+  return apiRequest<RealCreatorDashboard>(`/analytics/creator-dashboard${query}`);
+}
+
+/** `GET /analytics/creator-dashboard/timeseries` (shipped 2026-09, commit 1ad2951) — zero-filled,
+ *  UTC buckets; `range` bounded server-side (day <= 90, month <= 24). */
+export async function getCreatorDashboardTimeseries(
+  granularity: TimeseriesGranularity,
+  range: TimeseriesRange,
+): Promise<RealCreatorTimeseriesPoint[]> {
+  return apiRequest<RealCreatorTimeseriesPoint[]>(`/analytics/creator-dashboard/timeseries?granularity=${granularity}&range=${range}`);
+}
+
+/** `GET /analytics/creator-dashboard/earnings-breakdown` (shipped 2026-09, commit 1ad2951) — note
+ *  the path: colocated under analytics, NOT `/creator/earnings/breakdown` as first asked. Real
+ *  SaleStatus/PayoutStatus pipeline buckets. */
+export async function getCreatorEarningsBreakdown(): Promise<RealCreatorEarningsBreakdown> {
+  return apiRequest<RealCreatorEarningsBreakdown>("/analytics/creator-dashboard/earnings-breakdown");
 }

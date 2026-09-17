@@ -10,7 +10,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
         ref={ref}
         aria-invalid={invalid || undefined}
         className={cn(
-          "min-h-24 w-full rounded-[var(--radius-sm)] border border-border bg-transparent px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground-2 outline-none transition-colors",
+          "min-h-24 w-full rounded-[var(--radius-sm)] border-2 border-border bg-transparent px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground-2 outline-none transition-colors",
           "hover:border-border-hover",
           "focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           "disabled:cursor-not-allowed disabled:opacity-50",

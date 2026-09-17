@@ -1,6 +1,5 @@
 import type { PayoutRequest, MerchantPayoutMethod } from "@/lib/merchant/types";
 import { getCreatorEarningsSummary } from "@/lib/merchant/store";
-import { getOnboardingRecord } from "@/lib/onboarding/store";
 import { notifyPayoutCompleted } from "@/lib/notifications/mock/store";
 import { deriveCreatorId } from "./identity";
 
@@ -84,13 +83,12 @@ export function getCreatorPayoutMethod(email: string): MerchantPayoutMethod | un
   return getRecord(email).payoutMethod;
 }
 
-/** Override, else whatever Playbook 02 onboarding captured — same reinterpret-not-adapt shape
- *  reasoning as lib/merchant/store.ts's getEffectivePayoutMethod. */
+/** Used to also fall back to Playbook 02's onboarding-captured payout data — that step no longer
+ *  exists (payout setup moved to Creator Settings → Payout entirely), so this is just the
+ *  override now. Kept as its own function since nothing else in this file calls
+ *  getCreatorPayoutMethod directly and a future real fallback source may still want the seam. */
 export function getEffectiveCreatorPayoutMethod(email: string): MerchantPayoutMethod | undefined {
-  const override = getCreatorPayoutMethod(email);
-  if (override) return override;
-  const onboardingPayout = getOnboardingRecord(email)?.payout;
-  return onboardingPayout as MerchantPayoutMethod | undefined;
+  return getCreatorPayoutMethod(email);
 }
 
 export function saveCreatorPayoutMethod(email: string, method: MerchantPayoutMethod): void {

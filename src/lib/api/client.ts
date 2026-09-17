@@ -5,14 +5,28 @@ import type { ApiRequestOptions } from "./types"
 // private submodule, no bypass secret). API_BASE_URL for server-side calls,
 // NEXT_PUBLIC_API_BASE_URL if this ever needs to run client-side. Fails loud
 // rather than silently hitting a wrong/placeholder host.
-function resolveBaseUrl(): string {
+//
+// BUG FOUND LIVE (first real hit against the admin dashboard with a live backend): this used to
+// return the configured URL unconditionally — fine for every versioned `/api/v1/...` path, but
+// `/admin/*` is documented (API-ENDPOINTS.md) as its OWN top-level namespace, NOT nested under
+// `/api/vN` at all. lib/admin/real-store.ts's own doc comment already claimed "apiRequest itself
+// already knows to hit whatever base URL is configured" for admin paths — that was aspirational,
+// never actually implemented, so every admin call was silently hitting
+// `{host}/api/v1/admin/...` instead of `{host}/admin/...`, a route FastAPI has never heard of —
+// hence the literal `{"detail":"Not Found"}` surfacing verbatim as the admin dashboard's error
+// banner. Fixed here, once, for every admin/real-store.ts call, rather than patched per call site.
+function resolveBaseUrl(path: string): string {
   const url = process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL
   if (!url) {
     throw new Error(
       "API base URL not configured — set API_BASE_URL (server) or NEXT_PUBLIC_API_BASE_URL (client) in .env.local. Placeholder until the contract sheet confirms the real host."
     )
   }
-  return url.replace(/\/+$/, "")
+  const trimmed = url.replace(/\/+$/, "")
+  if (path === "/admin" || path.startsWith("/admin/")) {
+    return trimmed.replace(/\/api\/v\d+$/i, "")
+  }
+  return trimmed
 }
 
 // Auth scheme confirmed with the backend: `Authorization: Bearer <clerk-session-token>` (see
@@ -77,7 +91,7 @@ export async function apiRequest<T>(
   // actionable "set API_BASE_URL..." message never actually reached anyone. Resolved up front,
   // outside that try, so a config problem surfaces as itself instead of masquerading as a flaky
   // connection.
-  const baseUrl = resolveBaseUrl()
+  const baseUrl = resolveBaseUrl(path)
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)

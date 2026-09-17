@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useSignIn } from "@clerk/nextjs";
+import { useSignIn, useClerk } from "@clerk/nextjs";
 import { Mail, KeyRound } from "lucide-react";
 import { Button } from "@/components/reference/ui/button";
 import { Input } from "@/components/reference/ui/input";
@@ -13,6 +13,7 @@ import { FormErrorText } from "@/components/reference/ui/form-error-text";
 import { clerkFieldError, clerkGlobalError } from "./clerk-errors";
 import { useRedirectIfSignedIn } from "./use-redirect-if-signed-in";
 import { safeReturnTo } from "@/lib/auth/safe-return-to";
+import { OAuthButtons, type OAuthProviderId } from "./oauth-buttons";
 
 /**
  * Clerk-mode counterpart to AuthFlowForm kind="login" — same visual pieces (Input/PasswordInput/
@@ -20,9 +21,30 @@ import { safeReturnTo } from "@/lib/auth/safe-return-to";
  * password sign-in, a TOTP second factor (Clerk: `needs_second_factor`), and new-device Device
  * Trust verification (Clerk: `needs_client_trust`) — this app's mock provider supports the AAL2
  * shape, so login's behavior doesn't regress switching providers.
+ *
+ * `requireRole`/`blockRoles` — the /admin-login split: /login passes `blockRoles={["admin"]}` (an
+ * admin account must use the dedicated, IP-restricted /admin-login instead), which itself passes
+ * `requireRole="admin"` (nobody else gets in there even if they know its URL). Enforced right here
+ * in `finalize()`, after Clerk confirms the session but before this app ever navigates anywhere —
+ * a rejected session is signed straight back out, never left sitting around half-authenticated.
  */
-export function ClerkLoginForm({ returnTo, onAuthenticated }: { returnTo?: string; onAuthenticated?: () => void }) {
+export function ClerkLoginForm({
+  returnTo,
+  onAuthenticated,
+  requireRole,
+  blockRoles,
+  showOAuth = true,
+}: {
+  returnTo?: string;
+  onAuthenticated?: () => void;
+  /** Only a session holding this role is let through; any other gets signed out immediately. */
+  requireRole?: string;
+  /** A session holding any of these roles gets signed out immediately instead of navigating. */
+  blockRoles?: string[];
+  showOAuth?: boolean;
+}) {
   const { signIn, errors, fetchStatus } = useSignIn();
+  const clerk = useClerk();
   const router = useRouter();
   // SECURITY (background review) — re-validated here rather than trusted from the caller: this
   // component shouldn't rely on every call site remembering to sanitize `returnTo` (login-view.tsx
@@ -38,6 +60,9 @@ export function ClerkLoginForm({ returnTo, onAuthenticated }: { returnTo?: strin
   const [deviceCode, setDeviceCode] = useState("");
   const [deviceCodeSendError, setDeviceCodeSendError] = useState<string | null>(null);
   const [taskError, setTaskError] = useState<string | null>(null);
+  const [roleGuardError, setRoleGuardError] = useState<string | null>(null);
+  const [oauthProvider, setOauthProvider] = useState<OAuthProviderId | null>(null);
+  const [oauthError, setOauthError] = useState<string | null>(null);
   const submitting = fetchStatus === "fetching";
 
   if (alreadySignedIn) {
@@ -57,13 +82,28 @@ export function ClerkLoginForm({ returnTo, onAuthenticated }: { returnTo?: strin
     return <Alert variant="error">{taskError}</Alert>;
   }
 
+  if (roleGuardError) {
+    return <Alert variant="error">{roleGuardError}</Alert>;
+  }
+
   async function finalize() {
     await signIn.finalize({
-      navigate: ({ session, decorateUrl }) => {
+      navigate: async ({ session, decorateUrl }) => {
         if (session?.currentTask) {
           setTaskError(
             `Your account needs an extra step (${session.currentTask.key}) this app doesn't support yet — contact support.`,
           );
+          return;
+        }
+        const roles = (session?.user?.publicMetadata as { roles?: string[] } | undefined)?.roles ?? [];
+        if (requireRole && !roles.includes(requireRole)) {
+          await clerk.signOut();
+          setRoleGuardError("This sign-in page is for admin accounts only.");
+          return;
+        }
+        if (blockRoles?.some((r) => roles.includes(r))) {
+          await clerk.signOut();
+          setRoleGuardError("Admin accounts must sign in at /admin-login, not here.");
           return;
         }
         onAuthenticated?.();
@@ -93,6 +133,22 @@ export function ClerkLoginForm({ returnTo, onAuthenticated }: { returnTo?: strin
       const { error: sendError } = await signIn.mfa.sendEmailCode();
       setDeviceCodeSendError(sendError ? "Couldn't send a verification code. Try Resend code below." : null);
     }
+  }
+
+  async function handleOAuth(provider: OAuthProviderId) {
+    setOauthError(null);
+    setOauthProvider(provider);
+    const redirectUrl = `${window.location.origin}/sso-callback`;
+    const { error } = await signIn.sso({
+      strategy: `oauth_${provider}`,
+      redirectUrl,
+      redirectCallbackUrl: redirectUrl,
+    });
+    if (error) {
+      setOauthProvider(null);
+      setOauthError(`Couldn't sign in with ${provider === "google" ? "Google" : "Apple"}. Try again.`);
+    }
+    // No success path here — signIn.sso() navigates the browser away to the provider itself.
   }
 
   async function handleTotpSubmit(e: FormEvent) {
@@ -189,6 +245,7 @@ export function ClerkLoginForm({ returnTo, onAuthenticated }: { returnTo?: strin
   return (
     <form onSubmit={handlePasswordSubmit} noValidate className="space-y-4">
       {banner && <Alert variant="error">{banner}</Alert>}
+      {oauthError && <Alert variant="error">{oauthError}</Alert>}
       <div className="space-y-1.5">
         <Label htmlFor="login-email" required>
           Email
@@ -235,6 +292,9 @@ export function ClerkLoginForm({ returnTo, onAuthenticated }: { returnTo?: strin
         >
           Trouble logging in? Start over
         </button>
+      )}
+      {showOAuth && (
+        <OAuthButtons onSelect={handleOAuth} loadingProvider={oauthProvider} disabled={submitting || oauthProvider !== null} />
       )}
     </form>
   );

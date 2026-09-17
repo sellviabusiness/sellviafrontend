@@ -13,8 +13,15 @@ import type { TicketContext } from "@/lib/admin/types";
 
 /** G4 detail — the aggregated "ticket context" support/admin needs, plus the one real write
  *  action this screen owns (suspend/unsuspend). Suspend routes through the shared confirm+note
- *  dialog since ending a merchant's live offers is a real, disclosed side effect. */
+ *  dialog since ending a merchant's live offers is a real, disclosed side effect.
+ *
+ * BUG FOUND LIVE (same gap fixed in RealUserDetailView, and its own root-cause fix in
+ *  lib/admin/store.ts's getUserSummaries()) — nothing stopped an admin suspending their own
+ *  account, or another admin's; `actorEmail` was already threaded through for audit logging but
+ *  never compared against `email`/`context.roles` to guard the button itself. Admins no longer
+ *  appear in the Users list at all (the real fix), this is defense in depth for a direct URL hit. */
 export function UserDetailView({ email, actorEmail }: { email: string; actorEmail: string }) {
+  const isSelf = email.toLowerCase() === actorEmail.toLowerCase();
   const [context, setContext] = useState<TicketContext | null>(null);
   const [suspended, setSuspended] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -31,7 +38,10 @@ export function UserDetailView({ email, actorEmail }: { email: string; actorEmai
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [email]);
 
+  const isProtected = isSelf || context?.roles.includes("admin") === true;
+
   async function confirmSuspend() {
+    if (isProtected) return; // button is hidden for this case, but never trust that alone
     await suspendUser(email, actorEmail, note || undefined);
     setConfirmOpen(false);
     setNote("");
@@ -60,7 +70,11 @@ export function UserDetailView({ email, actorEmail }: { email: string; actorEmai
             <span className="text-xs text-muted-foreground">{context.roles.join(", ") || "no role"}</span>
           </div>
         </div>
-        {suspended ? (
+        {isProtected ? (
+          <span className="text-xs text-muted-foreground">
+            {isSelf ? "This is your own account — can't suspend yourself here." : "Admin accounts aren't managed here."}
+          </span>
+        ) : suspended ? (
           <Button type="button" variant="secondary" onClick={unsuspend}>
             <UserCheck className="h-4 w-4" aria-hidden="true" />
             Unsuspend

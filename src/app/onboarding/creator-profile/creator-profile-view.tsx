@@ -108,7 +108,7 @@ export function CreatorProfileView({ email, id, sessionRoles }: { email: string;
       setSubmitting(false);
     }
 
-    const next = stepAfter("creator-profile", roles) ?? "payout";
+    const next = stepAfter("creator-profile", roles) ?? "complete";
     router.push(STEP_PATH[next]);
   }
 

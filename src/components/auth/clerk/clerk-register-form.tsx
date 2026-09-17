@@ -14,6 +14,7 @@ import { clerkFieldError, clerkGlobalError } from "./clerk-errors";
 import { useRedirectIfSignedIn } from "./use-redirect-if-signed-in";
 import { safeReturnTo } from "@/lib/auth/safe-return-to";
 import { updateClerkRoles } from "@/app/actions/clerk-profile";
+import { OAuthButtons, type OAuthProviderId } from "./oauth-buttons";
 
 /**
  * Clerk-mode counterpart to AuthFlowForm kind="registration" — unlike Kratos's model (a separate
@@ -50,6 +51,8 @@ export function ClerkRegisterForm({
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [taskError, setTaskError] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
+  const [oauthProvider, setOauthProvider] = useState<OAuthProviderId | null>(null);
+  const [oauthError, setOauthError] = useState<string | null>(null);
   const submitting = fetchStatus === "fetching" || finalizing;
   // Derived, not its own state — clears the instant they pick a role since it's recomputed every
   // render, no effect needed (roles is owned by register-view.tsx, a prop here).
@@ -87,6 +90,25 @@ export function ClerkRegisterForm({
     // no code ever sent and no indication why — surfaced as a banner there instead now.
     const { error: sendError } = await signUp.verifications.sendEmailCode();
     setSendCodeError(sendError ? "Couldn't send a verification code. Try Resend code below." : null);
+  }
+
+  async function handleOAuth(provider: OAuthProviderId) {
+    // No role gate here (unlike handleSignUpSubmit) — OAuth has no signup screen of its own to
+    // gate, so /sso-callback sends a brand-new account to /onboarding/choose-role to pick one
+    // instead, once a session actually exists.
+    setOauthError(null);
+    setOauthProvider(provider);
+    const redirectUrl = `${window.location.origin}/sso-callback`;
+    const { error } = await signUp.sso({
+      strategy: `oauth_${provider}`,
+      redirectUrl,
+      redirectCallbackUrl: redirectUrl,
+    });
+    if (error) {
+      setOauthProvider(null);
+      setOauthError(`Couldn't sign up with ${provider === "google" ? "Google" : "Apple"}. Try again.`);
+    }
+    // No success path here — signUp.sso() navigates the browser away to the provider itself.
   }
 
   async function handleVerifySubmit(e: FormEvent) {
@@ -217,6 +239,7 @@ export function ClerkRegisterForm({
     <form onSubmit={handleSignUpSubmit} noValidate className="space-y-4">
       {banner && <Alert variant="error">{banner}</Alert>}
       {roleError && <Alert variant="error">{roleError}</Alert>}
+      {oauthError && <Alert variant="error">{oauthError}</Alert>}
       <div className="space-y-1.5">
         <Label htmlFor="register-email" required>
           Email
@@ -250,6 +273,7 @@ export function ClerkRegisterForm({
         {submitting ? "Please wait…" : "Create account"}
       </Button>
       <div id="clerk-captcha" />
+      <OAuthButtons onSelect={handleOAuth} loadingProvider={oauthProvider} disabled={submitting || oauthProvider !== null} />
     </form>
   );
 }

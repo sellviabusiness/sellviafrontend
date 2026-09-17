@@ -1,5 +1,15 @@
 import { apiRequest } from "@/lib/api";
-import type { RealOffer, RealApplication, RealSale, RealBillingCycle, RealRefundRequest, RealMerchantDashboard } from "./types";
+import type {
+  RealOffer,
+  RealApplication,
+  RealSale,
+  RealBillingCycle,
+  RealRefundRequest,
+  RealMerchantDashboard,
+  RealMerchantTimeseriesPoint,
+  TimeseriesGranularity,
+  TimeseriesRange,
+} from "./types";
 
 /**
  * REAL backend layer for the Merchant Offer domain (API-ENDPOINTS.md, 2026-09-05) — the
@@ -17,12 +27,51 @@ export interface PrefillResult {
   priceCents: number;
   currency: string;
   imageUrl: string | null;
+  /** SHIPPED 2026-09-12 — read off the fetched Shopify variant's own `requires_shipping` flag
+   *  (false → digital, true → physical; Shopify's standard signal, not invented here). `null`
+   *  specifically means the flag wasn't a clean boolean on Shopify's response (missing/unexpected
+   *  shape) — backend deliberately didn't guess, so real-new-offer-view.tsx's fallback chain
+   *  (onboarding profile default, then "physical") covers this case exactly like it covers a
+   *  failed fetch entirely. */
+  category: "physical" | "digital" | null;
 }
 
 /** Best-effort — the caller decides what "couldn't fetch" means for the UI (never blocks
  *  creation); a 422 PRODUCT_FETCH_FAILED surfaces via the thrown ApiError as normal. */
 export async function prefillOffer(productUrl: string): Promise<PrefillResult> {
   return apiRequest<PrefillResult>("/offers/prefill", { method: "POST", body: { productUrl } });
+}
+
+export interface ProductRead {
+  id: string;
+  name: string;
+  priceCents: number;
+  currency: string;
+  imageUrl: string | null;
+  category: "physical" | "digital" | null;
+}
+
+/** Persists a Product from a Shopify URL (unlike `prefillOffer`, a real write) — required before
+ *  `createOffer` since offers now reference a `productId`. Called once the merchant confirms/
+ *  continues past the prefill preview, not on every keystroke. */
+export async function importProduct(productUrl: string): Promise<ProductRead> {
+  return apiRequest<ProductRead>("/products/import", { method: "POST", body: { productUrl } });
+}
+
+export interface CreateProductInput {
+  name: string;
+  priceCents: number;
+  currency?: string;
+  category?: "physical" | "digital";
+  description?: string;
+  imageUrl?: string;
+  productUrl?: string;
+}
+
+/** Manual-entry alternative to `importProduct` — used when the Shopify import fails/isn't
+ *  applicable and the merchant's own typed-in fields are the only source of truth. */
+export async function createProduct(input: CreateProductInput): Promise<ProductRead> {
+  return apiRequest<ProductRead>("/products", { method: "POST", body: input });
 }
 
 export interface CreateRealOfferInput {
@@ -34,6 +83,10 @@ export interface CreateRealOfferInput {
   productUrl: string;
   /** Optional — prefill is best-effort, so an offer can legitimately have none. */
   imageUrl?: string;
+  /** The `Product` this offer snapshots from (`ProductRead.id`, from `importProduct`/
+   *  `createProduct`) — required, 422s without it. Offer keeps its own independent copy of
+   *  name/price/currency/image/category; this is provenance, not a live link. */
+  productId: string;
 }
 
 /** Always creates as `draft` — there is no "publish on create" option server-side. Callers that
@@ -138,9 +191,24 @@ export async function requestRefund(saleId: string, requestedAmountCents: number
 // Dashboard
 // ---------------------------------------------------------------------------
 
-/** Own offer performance only — never platform-wide (that's Admin's /admin/analytics/kpis). No
- *  time series, per-offer stats, or activity feed — see RealMerchantDashboard's own doc comment,
- *  types.ts, for why this is genuinely all there is today, not a partial read. */
-export async function getMerchantDashboard(): Promise<RealMerchantDashboard> {
-  return apiRequest<RealMerchantDashboard>("/analytics/merchant-dashboard");
+/** Own offer performance only — never platform-wide (that's Admin's /admin/analytics/kpis).
+ *  `withDeltas` requests `?compareTo=previous_period` (shipped 2026-09, commit 1ad2951) — the
+ *  `*DeltaPercent` fields on RealMerchantDashboard are `null` unless this is true, and can still
+ *  be `null` even then (no previous-period baseline yet). Per-offer stats/activity feed/revenue-
+ *  by-offer are still genuinely unavailable — see RealMerchantDashboard's own doc comment. */
+export async function getMerchantDashboard(withDeltas = false): Promise<RealMerchantDashboard> {
+  const query = withDeltas ? "?compareTo=previous_period" : "";
+  return apiRequest<RealMerchantDashboard>(`/analytics/merchant-dashboard${query}`);
+}
+
+/** `GET /analytics/merchant-dashboard/timeseries` (shipped 2026-09, commit 1ad2951) — zero-filled,
+ *  UTC buckets; `range` is bounded server-side (day <= 90, month <= 24), a request past that cap
+ *  fails rather than silently clamping. `revenueCents` per point is the gross Sale.amount_cents,
+ *  not the dashboard summary's amountBilledCents (a cost, not revenue) — see the type's own doc
+ *  comment, types.ts. */
+export async function getMerchantDashboardTimeseries(
+  granularity: TimeseriesGranularity,
+  range: TimeseriesRange,
+): Promise<RealMerchantTimeseriesPoint[]> {
+  return apiRequest<RealMerchantTimeseriesPoint[]>(`/analytics/merchant-dashboard/timeseries?granularity=${granularity}&range=${range}`);
 }

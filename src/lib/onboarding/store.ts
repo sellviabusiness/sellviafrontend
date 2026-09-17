@@ -3,12 +3,23 @@ import type {
   CommonProfile,
   MerchantDetails,
   CreatorDetails,
-  PayoutData,
   ConnectionStatus,
 } from "./types";
 
 /**
  * MOCK DATA LAYER — Onboarding.
+ *
+ * CORRECTION — this file itself is `localStorage`-only in every mode, but several of the *step
+ * views* that call it (business-view.tsx, creator-profile-view.tsx, store-connect-view.tsx) also
+ * make a REAL `apiRequest` call of their own, gated on `!isMockMode`, in addition to (not instead
+ * of) the local save here — this file's own record is still what the UI reads back for prefill/
+ * step-completion regardless of mode. So "stands in for" below is only accurate for `roles`,
+ * `commonProfile` (phone has no backend column at all), and `complete` (tracked for real, but on
+ * Clerk's own `publicMetadata.onboardingComplete`, not this API). Merchant/creator role-grant and
+ * Shopify-connect already have real endpoints; billing-connect had no real equivalent to build
+ * against (Payments/Payment Flow.md's invoice model) and payout moved out of onboarding entirely
+ * (Creator Settings → Payout, its own real GET/PATCH /users/creator-profile/payout-method) — both
+ * removed as onboarding steps outright rather than wired to anything here.
  *
  * Stands in for:
  *   GET   /onboarding                       — current OnboardingRecord for the session's account
@@ -16,15 +27,13 @@ import type {
  *   PATCH /onboarding/profile               — saveCommonProfile  { fullName, phone }
  *   PATCH /onboarding/merchant              — saveMerchantDetails MerchantDetails
  *   PATCH /onboarding/creator               — saveCreatorDetails  CreatorDetails
- *   PATCH /onboarding/payout                — savePayout          PayoutData
- *   PATCH /onboarding/billing-status        — saveBillingStatus         { status: ConnectionStatus }
  *   PATCH /onboarding/store-connection      — saveStoreConnectionStatus { status, error? }
  *   PATCH /onboarding/payout-status         — savePayoutStatus          { status: ConnectionStatus }
  *   POST  /onboarding/complete              — markOnboardingComplete (no body)
  *
  * Request/response shapes: the `OnboardingRecord`/`CommonProfile`/`MerchantDetails`/
- * `CreatorDetails`/`PayoutData` types this file already imports from ./types.ts are the intended
- * contract — every save* function's parameter type IS the PATCH body shape.
+ * `CreatorDetails` types this file already imports from ./types.ts are the intended contract —
+ * every save* function's parameter type IS the PATCH body shape.
  *
  * Known mock-only deviation: every function takes `email` explicitly to key the localStorage
  * record — a real client calls these with no user param at all (identity comes from the session/
@@ -35,8 +44,8 @@ import type {
  *
  * DEV-ONLY frontend state, same pattern as lib/auth/mock/user-store.ts — a localStorage-backed
  * record per account, organized so a real backend integration later is a straight swap: each
- * step already saves its own clearly-separated slice (commonProfile / merchant / creator /
- * payout) instead of one flat blob.
+ * step already saves its own clearly-separated slice (commonProfile / merchant / creator)
+ * instead of one flat blob.
  */
 const KEY = "sellvia_onboarding";
 
@@ -109,15 +118,6 @@ export function saveMerchantDetails(email: string, data: MerchantDetails): Onboa
 
 export function saveCreatorDetails(email: string, data: CreatorDetails): OnboardingRecord {
   return upsert(email, { creator: data });
-}
-
-export function savePayout(email: string, data: PayoutData): OnboardingRecord {
-  return upsert(email, { payout: data });
-}
-
-/** C2 — billing connect adapter status, see lib/onboarding/integrations/billing.ts. */
-export function saveBillingStatus(email: string, status: ConnectionStatus): OnboardingRecord {
-  return upsert(email, { billingStatus: status });
 }
 
 /** C3 — Shopify store connect adapter status, see lib/onboarding/integrations/shopify.ts. */

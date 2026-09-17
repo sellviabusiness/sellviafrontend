@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 const inputClasses = (invalid: boolean | undefined, hasIcon: boolean, className?: string) =>
   cn(
-    "h-11 w-full rounded-[var(--radius-sm)] border border-border bg-transparent text-sm text-foreground placeholder:text-muted-foreground-2 outline-none transition-colors",
+    "h-11 w-full rounded-[var(--radius-sm)] border-2 border-border bg-transparent text-sm text-foreground placeholder:text-muted-foreground-2 outline-none transition-colors",
     hasIcon ? "pl-10 pr-3.5" : "px-3.5",
     "hover:border-border-hover",
     "focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background",

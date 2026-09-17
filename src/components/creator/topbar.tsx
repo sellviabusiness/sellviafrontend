@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { Menu, ArrowLeftRight, LifeBuoy } from "lucide-react";
 import { SellViaLogo } from "@/components/reference/brand/sellvia-logo";
 import { NotificationBell } from "@/components/shared/notification-bell";
+import { GlobalSearch } from "@/components/shared/global-search";
 import { LogoutButton } from "@/app/dashboard/logout-button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ROLE_PREFIX } from "@/lib/nav/config";
+import { isMockMode } from "@/lib/auth/config";
 
 const ROLE_LABEL: Record<string, string> = { merchant: "Merchant", creator: "Creator", admin: "Admin" };
 
@@ -34,7 +36,7 @@ export function CreatorTopbar({
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border px-4 sm:px-6">
+    <header className="flex h-16 shrink-0 items-center gap-3 bg-[#FAFAFA] px-4 sm:px-6">
       <button
         type="button"
         onClick={onMenuClick}
@@ -45,6 +47,14 @@ export function CreatorTopbar({
       </button>
 
       <SellViaLogo href="/creator/overview" height={24} />
+
+      {/* GlobalSearch calls a real backend endpoint with no mock counterpart — real mode only,
+          same convention the admin waitlist screen used to follow. */}
+      {!isMockMode && (
+        <div className="hidden flex-1 sm:flex">
+          <GlobalSearch role="creator" />
+        </div>
+      )}
 
       <div className="ml-auto flex items-center gap-2 sm:gap-3">
         <NotificationBell email={email} role="creator" />

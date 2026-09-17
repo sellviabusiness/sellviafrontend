@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { UserCircle, CreditCard, ShieldCheck, ChevronRight, Trash2, Moon } from "lucide-react";
+import { UserCircle, CreditCard, ShieldCheck, ChevronRight, Trash2 } from "lucide-react";
 import { Card } from "@/components/reference/ui/card";
-import { ThemeToggle } from "@/components/reference/theme/theme-toggle";
+// import { Moon } from "lucide-react"; // hidden for now — see below
+// import { ThemeToggle } from "@/components/reference/theme/theme-toggle";
 
 export const metadata = { title: "Settings" };
 
@@ -23,19 +24,9 @@ export default function CreatorSettingsPage() {
         <p className="text-sm text-muted-foreground">Manage your profile, payout method, and account security.</p>
       </div>
 
-      <section className="space-y-2">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground-2">Preferences</h2>
-        <Card className="flex items-center gap-4 p-5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent-foreground">
-            <Moon className="h-4 w-4" aria-hidden="true" />
-          </span>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-foreground">Appearance</p>
-            <p className="text-xs text-muted-foreground">Switch between light and dark theme.</p>
-          </div>
-          <ThemeToggle />
-        </Card>
-      </section>
+      {/* "Preferences" (Appearance/dark-mode) section hidden for now, at explicit request —
+          dark mode hasn't been checked against this session's neo-brutalist redesign yet.
+          Restore the section + the Moon/ThemeToggle imports above once it has. */}
 
       <section className="space-y-2">
         <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground-2">Account</h2>

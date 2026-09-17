@@ -12,19 +12,17 @@ import {
   AlertTriangle,
   Terminal,
   BarChart3,
-  UserPlus,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { isMockMode } from "@/lib/auth/config";
 
 /**
  * Playbook 07's G1–G10 rail — one entry per screen, "fully separate nav" from Merchant/Creator
  * per SCREEN_INVENTORY's own global note for the whole Admin section.
  *
- * G7 (Waitlist) stayed out of the mock rail — Playbook 08 removed the public marketing site
- * entirely, so the mock has no waitlist form feeding it. The real backend has its own
- * `/admin/waitlist` queue regardless (API-ENDPOINTS.md), so it's added back for real mode only.
+ * G7 (Waitlist) — BACKEND CONFIRMED LIVE, removed entirely (2026-09-13): the whole feature was
+ * dropped backend-side (table, endpoints, migration applied) — never had real production data,
+ * only a test row. Removed here to match, not just left pointing at a 404.
  */
 const NAV_ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutGrid },
@@ -32,7 +30,6 @@ const NAV_ITEMS = [
   { href: "/admin/offers/vetting", label: "Offer vetting", icon: ClipboardCheck },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/refunds-disputes", label: "Refunds & disputes", icon: Receipt },
-  ...(isMockMode ? [] : [{ href: "/admin/waitlist", label: "Waitlist", icon: UserPlus }] as const),
   { href: "/admin/reconciliation", label: "Reconciliation", icon: Scale },
   { href: "/admin/at-risk-users", label: "At-risk users", icon: AlertTriangle },
   { href: "/admin/console", label: "AI Console", icon: Terminal },
@@ -53,7 +50,9 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             aria-current={active ? "page" : undefined}
             className={cn(
               "flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium transition-colors",
-              active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
+              active
+                ? "border-2 border-border bg-accent text-accent-foreground shadow-brutal-sm"
+                : "border-2 border-transparent text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
             )}
           >
             <Icon className="h-4 w-4" aria-hidden="true" />
@@ -67,7 +66,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AdminSidebar() {
   return (
-    <nav aria-label="Admin navigation" className="hidden w-56 shrink-0 flex-col gap-1 overflow-y-auto border-r border-border p-4 sm:flex">
+    <nav aria-label="Admin navigation" className="hidden w-56 shrink-0 flex-col gap-1 overflow-y-auto p-4 sm:flex">
       <NavLinks />
     </nav>
   );

@@ -16,6 +16,6 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
   return isMockMode ? (
     <UserDetailView email={decodeURIComponent(email)} actorEmail={session.email} />
   ) : (
-    <RealUserDetailView userId={email} />
+    <RealUserDetailView userId={email} currentUserEmail={session.email} />
   );
 }

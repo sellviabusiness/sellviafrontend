@@ -65,6 +65,9 @@ export interface RealOffer {
   /** Persisted (backend added it, 2026-09-06, b2a7520) — populated from prefill at creation,
    *  never re-fetched/re-validated server-side, same trust level as productUrl itself. */
   imageUrl: string | null;
+  /** The Product this offer was created from (backend added it alongside the Product-first
+   *  create flow) — a snapshot's provenance, not a live link; nothing here re-reads it. */
+  productId: string;
   status: RealOfferStatus;
   publishedAt: string | null;
   createdAt: string;
@@ -101,7 +104,9 @@ export interface RealApplication {
 
 /** `GET /affiliate-links` (creator-only) — own links only, created only as a side effect of
  *  application approval, no create endpoint at all. `slug` is what `/go/{slug}` (served by the
- *  backend directly, not `/api/v1`) resolves. */
+ *  backend directly, not `/api/v1`) resolves. `clicksTotal`/`salesTotal`/`earningsCents` are an
+ *  extension to this same endpoint (shipped 2026-09, commit 1ad2951) — no new endpoint, no
+ *  separate per-link stats call needed. */
 export interface RealAffiliateLink {
   id: string;
   applicationId: string;
@@ -111,6 +116,9 @@ export interface RealAffiliateLink {
   lockedCommissionRate: number;
   createdAt: string;
   updatedAt: string;
+  clicksTotal: number;
+  salesTotal: number;
+  earningsCents: number;
 }
 
 export type CreatorPlatform = "instagram" | "tiktok" | "youtube" | "other";
@@ -308,6 +316,10 @@ export interface RealRefundRequest {
  * cadence, full balance, no partial cashout. `RealPayoutMethodValue` uses the backend's own
  * enum (`bank_transfer`, not the mock's `"bank"` shorthand) — raw account/IBAN/wallet numbers
  * are sent but never stored anywhere in SellVia's own database (forwarded to Swich, discarded).
+ *
+ * PRODUCT DECISION — bank transfer only now, JazzCash/EasyPaisa dropped from the payout method
+ * (not the merchant-billing side — a merchant paying their own Switch invoice still gets card/
+ * bank/JazzCash/EasyPaisa at Switch's hosted checkout; this is only about how a creator gets paid).
  */
 export type RealPayoutStatus = "pending" | "processing" | "paid" | "failed";
 
@@ -322,7 +334,7 @@ export interface RealPayout {
   updatedAt: string;
 }
 
-export type RealPayoutMethodValue = "bank_transfer" | "jazzcash" | "easypaisa";
+export type RealPayoutMethodValue = "bank_transfer";
 
 export interface RealPayoutMethodState {
   payoutMethod: RealPayoutMethodValue | null;
@@ -331,18 +343,22 @@ export interface RealPayoutMethodState {
 
 export interface UpdateRealPayoutMethodInput {
   method: RealPayoutMethodValue;
-  bankAccountName?: string;
-  bankAccountNumber?: string;
-  bankName?: string;
-  mobileWalletNumber?: string;
-  mobileWalletAccountName?: string;
+  bankAccountName: string;
+  bankAccountNumber: string;
+  bankName: string;
 }
 
 /**
- * Real dashboard aggregates (API-ENDPOINTS.md) — much coarser than the mock's OverviewStats/
- * OverviewTrends: no time series, no per-offer stats, no activity feed, no month-over-month
- * trend deltas. This is genuinely all either endpoint returns today — not a partial read, the
- * real v1 dashboard.
+ * Real dashboard aggregates (API-ENDPOINTS.md). Originally much coarser than the mock's
+ * OverviewStats/OverviewTrends (no time series, no per-offer stats, no activity feed, no
+ * month-over-month deltas) — the `*DeltaPercent` fields below close part of that gap (shipped
+ * 2026-09, commit 1ad2951): present only when the caller passes `?compareTo=previous_period`
+ * (see `getMerchantDashboard`'s doc comment), and `null` even then if there's no previous-period
+ * baseline to compare against. Lifetime/snapshot fields (offersTotal, walletBalanceCents, ...)
+ * get no delta at all — there's no meaningful "previous period" for a running total or a point-
+ * in-time balance, so the backend doesn't pretend otherwise. Per-offer stats, an activity feed,
+ * and revenue/sales-by-offer are still genuinely unavailable — RealSale has no offerId (see its
+ * own doc comment) until Sale.offer_id denormalization ships as its own task.
  */
 export interface RealMerchantDashboard {
   offersTotal: number;
@@ -351,6 +367,10 @@ export interface RealMerchantDashboard {
   salesAcceptedTotal: number;
   conversionRate: number;
   amountBilledCents: number;
+  clicksDeltaPercent: number | null;
+  salesDeltaPercent: number | null;
+  amountBilledDeltaPercent: number | null;
+  conversionRateDeltaPercent: number | null;
 }
 
 export interface RealCreatorDashboard {
@@ -360,6 +380,43 @@ export interface RealCreatorDashboard {
   walletBalanceCents: number;
   lifetimePaidOutCents: number;
   hasPayoutThisPeriod: boolean;
+  clicksDeltaPercent: number | null;
+  salesDeltaPercent: number | null;
+}
+
+/**
+ * `GET .../merchant-dashboard/timeseries` and `.../creator-dashboard/timeseries` (shipped
+ * 2026-09, commit 1ad2951) — `?granularity=day|month&range=30d|12m`, bounded server-side
+ * (day <= 90, month <= 24). Buckets are zero-filled (a day/month with no activity still gets a
+ * row, all zeros) and forced to UTC — never skip a bucket or assume the caller's local timezone.
+ * Merchant `revenueCents` is the GROSS `Sale.amount_cents` (what the creator's sale was worth),
+ * not `amountBilledCents` from the dashboard summary above (that's a cost to the merchant, not
+ * revenue) — different metric, don't conflate them just because both are "cents".
+ */
+export interface RealMerchantTimeseriesPoint {
+  date: string;
+  clicksTotal: number;
+  salesTotal: number;
+  revenueCents: number;
+}
+
+export interface RealCreatorTimeseriesPoint {
+  date: string;
+  clicksTotal: number;
+  salesTotal: number;
+  earningsCents: number;
+}
+
+export type TimeseriesGranularity = "day" | "month";
+export type TimeseriesRange = "30d" | "12m";
+
+/** `GET /analytics/creator-dashboard/earnings-breakdown` (shipped 2026-09, commit 1ad2951) — note
+ *  the path: colocated under `analytics`, not a standalone `/creator/earnings/breakdown` router.
+ *  Real SaleStatus/PayoutStatus pipeline buckets, not invented categories. */
+export interface RealCreatorEarningsBreakdown {
+  pendingCents: number;
+  billedCents: number;
+  paidCents: number;
 }
 
 export type PayoutRequestStatus = "processing" | "paid";
@@ -377,14 +434,13 @@ export interface PayoutRequest {
 }
 
 /** Generic dummy payout method — deliberately not wired to any real provider, per explicit
- *  instruction. Distinct from Playbook 02's onboarding PayoutData. */
+ *  instruction. Bank transfer only (JazzCash/EasyPaisa dropped, product decision — matches the
+ *  real RealPayoutMethodValue's own narrowing, same reasoning). */
 export interface MerchantPayoutMethod {
-  method: "bank" | "jazzcash" | "easypaisa";
+  method: "bank";
   bankAccountName?: string;
   bankAccountNumber?: string;
   bankName?: string;
-  mobileWalletNumber?: string;
-  mobileWalletAccountName?: string;
 }
 
 export interface MerchantRecord {

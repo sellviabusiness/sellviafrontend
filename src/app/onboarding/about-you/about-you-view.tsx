@@ -46,7 +46,7 @@ export function AboutYouView({ email, id, sessionRoles }: { email: string; id: s
     }
 
     saveCommonProfile(email, { fullName: fullName.trim(), email, phone: phone.trim() });
-    const next = stepAfter("about-you", roles) ?? "payout";
+    const next = stepAfter("about-you", roles) ?? "complete";
     router.push(STEP_PATH[next]);
   }
 

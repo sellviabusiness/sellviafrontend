@@ -23,7 +23,7 @@ export const Select = forwardRef<
         ref={ref}
         aria-invalid={invalid || undefined}
         className={cn(
-          "h-11 w-full appearance-none rounded-[var(--radius-sm)] border border-border bg-input px-3.5 pr-9 text-sm text-foreground outline-none transition-colors",
+          "h-11 w-full appearance-none rounded-[var(--radius-sm)] border-2 border-border bg-input px-3.5 pr-9 text-sm text-foreground outline-none transition-colors",
           "hover:border-border-hover",
           "focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           "disabled:cursor-not-allowed disabled:opacity-50",

@@ -59,9 +59,10 @@ export function DashboardView() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-        <StatCard label="Active merchants" value={health.activeMerchants} icon={<Users className="h-4 w-4" aria-hidden="true" />} />
-        <StatCard label="Active creators" value={health.activeCreators} icon={<UserCheck className="h-4 w-4" aria-hidden="true" />} />
+        <StatCard tone="yellow" label="Active merchants" value={health.activeMerchants} icon={<Users className="h-4 w-4" aria-hidden="true" />} />
+        <StatCard tone="green" label="Active creators" value={health.activeCreators} icon={<UserCheck className="h-4 w-4" aria-hidden="true" />} />
         <StatCard
+          tone="lavender"
           label="Liquidity ratio (creators / merchant)"
           value={health.liquidityRatio === null ? "Not enough data yet" : health.liquidityRatio}
           icon={<Scale3d className="h-4 w-4" aria-hidden="true" />}

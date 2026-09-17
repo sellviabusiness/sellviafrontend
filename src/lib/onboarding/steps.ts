@@ -7,49 +7,57 @@ import type { OnboardingRecord, StepId } from "./types";
  * Creator onboarding"). This is the single source of truth both the step indicator and the
  * route guards use, so "what step comes next" is never computed twice.
  *
- * Design decision: "about-you" and "payout" are asked once per person, not once per role. The
- * spec describes Merchant and Creator onboarding as two standalone 3-step flows, which read
- * literally would re-ask name/email/phone and payout method a second time on a dual-role
- * account. That contradicts the spec's own "don't make the user feel like they're filling out a
- * huge form" principle and the same account only has one identity and one payout preference —
- * so both are shared across the whole run. Flagged here for visibility, not silently guessed.
+ * Design decision: "about-you" is asked once per person, not once per role. The spec describes
+ * Merchant and Creator onboarding as two standalone 3-step flows, which read literally would
+ * re-ask name/email/phone a second time on a dual-role account. That contradicts the spec's own
+ * "don't make the user feel like they're filling out a huge form" principle and the same account
+ * only has one identity — so it's shared across the whole run. Flagged here for visibility, not
+ * silently guessed.
+ *
+ * BACKEND CONFIRMED LIVE — the "billing-connect" (C2 Switch) step used to sit between /business
+ * and /store-connect. Backend confirmed there's no pre-registration concept to build it against:
+ * merchants never connect a payment method up front, Switch bills them per cycle via an invoice
+ * paid on demand (Payments/Payment Flow.md) — the real equivalent already exists as its own
+ * feature (Merchant → Billing), not an onboarding step. Removed outright, not just skipped.
+ *
+ * "payout" (C4) was removed the same way, at the same time, by explicit product decision: payout
+ * setup moved out of onboarding entirely, into Creator Settings → Payout (already real-wired
+ * there, GET/PATCH /users/creator-profile/payout-method) — nothing merchant-side needs it at all
+ * (merchants are billed, never paid). `OnboardingRecord.payout`/`payoutStatus` still exist for
+ * that settings screen's mock counterpart; only the onboarding step itself is gone.
  */
 export function getStepSequence(roles: string[]): StepId[] {
   const isMerchant = roles.includes("merchant");
   const isCreator = roles.includes("creator");
   const steps: StepId[] = ["about-you"];
-  if (isMerchant) steps.push("business", "billing", "store-connect");
+  if (isMerchant) steps.push("business", "store-connect");
   if (isMerchant && isCreator) steps.push("transition");
   if (isCreator) steps.push("creator-profile");
-  steps.push("payout", "complete");
+  steps.push("complete");
   return steps;
 }
 
 export const STEP_PATH: Record<StepId, string> = {
   "about-you": "/onboarding/about-you",
   business: "/onboarding/business",
-  billing: "/onboarding/billing",
   "store-connect": "/onboarding/store-connect",
   transition: "/onboarding/transition",
   "creator-profile": "/onboarding/creator-profile",
-  payout: "/onboarding/payout",
   complete: "/onboarding/complete",
 };
 
 export const STEP_LABEL: Record<StepId, string> = {
   "about-you": "About you",
   business: "Your business",
-  billing: "Billing connect",
   "store-connect": "Shopify store",
   transition: "Almost there",
   "creator-profile": "Your content",
-  payout: "Payout details",
   complete: "Done",
 };
 
 /** Whether `step`'s own prerequisites are satisfied — used to stop a user jumping ahead via a
- *  direct URL (e.g. hitting /onboarding/payout before /onboarding/about-you is filled in). Going
- *  *back* to revise an earlier, already-completed step is always allowed. */
+ *  direct URL (e.g. hitting /onboarding/creator-profile before /onboarding/about-you is filled
+ *  in). Going *back* to revise an earlier, already-completed step is always allowed. */
 export function isStepUnlocked(step: StepId, roles: string[], record: OnboardingRecord | null): boolean {
   const sequence = getStepSequence(roles);
   const index = sequence.indexOf(step);
@@ -69,23 +77,16 @@ export function isStepComplete(step: StepId, record: OnboardingRecord | null): b
       return Boolean(record.commonProfile);
     case "business":
       return Boolean(record.merchant);
-    // C2 — billing is "complete" once the adapter reports a connected state, not just once the
-    // user has clicked through the screen (a BLOCKED/error result must not silently unlock Shopify).
-    case "billing":
-      return record.billingStatus === "connected";
-    // C3 — same reasoning: only an actually-connected store lets the flow move on.
+    // C3 — only an actually-connected store lets the flow move on.
     case "store-connect":
       return record.storeConnectionStatus === "connected";
     // Transition is a static celebration screen, not a data step — it's "complete" the instant
-    // its real prerequisites (merchant details + billing + store connect) are done, so
-    // direct-URL/bypass logic skips straight past it to the next actionable step instead of
-    // getting stuck on it.
+    // its real prerequisites (merchant details + store connect) are done, so direct-URL/bypass
+    // logic skips straight past it to the next actionable step instead of getting stuck on it.
     case "transition":
-      return Boolean(record.merchant) && record.billingStatus === "connected" && record.storeConnectionStatus === "connected";
+      return Boolean(record.merchant) && record.storeConnectionStatus === "connected";
     case "creator-profile":
       return Boolean(record.creator);
-    case "payout":
-      return Boolean(record.payout);
     case "complete":
       return record.complete;
   }

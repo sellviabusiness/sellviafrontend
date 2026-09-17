@@ -5,6 +5,7 @@ import { Users, UserCheck, Scale3d } from "lucide-react";
 import { Card } from "@/components/reference/ui/card";
 import { StatCard } from "@/components/reference/ui/stat-card";
 import { Alert } from "@/components/reference/ui/alert";
+import { SkeletonStatGrid } from "@/components/reference/ui/skeleton";
 import { getMarketplaceKpis, getFunnel } from "@/lib/admin/real-store";
 import { formatPercent, formatCurrency } from "@/lib/merchant/format";
 import { ApiError } from "@/lib/api";
@@ -36,13 +37,7 @@ export function RealDashboardView() {
   }, []);
 
   if (!ready) {
-    return (
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3" aria-hidden="true">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-24 animate-pulse rounded-[var(--radius-md)] border border-border bg-foreground/5" />
-        ))}
-      </div>
-    );
+    return <SkeletonStatGrid count={9} className="lg:grid-cols-3" />;
   }
 
   if (loadError || !kpis) {
@@ -57,8 +52,8 @@ export function RealDashboardView() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-        <StatCard label="Active merchants" value={kpis.activeMerchants} icon={<Users className="h-4 w-4" aria-hidden="true" />} />
-        <StatCard label="Active creators" value={kpis.activeCreators} icon={<UserCheck className="h-4 w-4" aria-hidden="true" />} />
+        <StatCard tone="yellow" label="Active merchants" value={kpis.activeMerchants} icon={<Users className="h-4 w-4" aria-hidden="true" />} />
+        <StatCard tone="green" label="Active creators" value={kpis.activeCreators} icon={<UserCheck className="h-4 w-4" aria-hidden="true" />} />
         <StatCard
           label="Liquidity ratio (creators / merchant)"
           value={kpis.liquidityRatio === null ? "Not enough data yet" : kpis.liquidityRatio}
@@ -66,7 +61,7 @@ export function RealDashboardView() {
         />
         <StatCard label="Click → sale conversion" value={kpis.clickToSaleConversionRate === null ? "Not enough data yet" : formatPercent(kpis.clickToSaleConversionRate)} />
         <StatCard label="Refund rate" value={kpis.refundRate === null ? "Not enough data yet" : formatPercent(kpis.refundRate)} />
-        <StatCard label="Platform fee revenue" value={formatCurrency(kpis.platformFeeRevenueCents / 100)} />
+        <StatCard tone="blue" label="Platform fee revenue" value={formatCurrency(kpis.platformFeeRevenueCents / 100)} />
         <StatCard label="Flagged sale rate" value={kpis.flaggedSaleRate === null ? "Not enough data yet" : formatPercent(kpis.flaggedSaleRate)} />
         <StatCard label="Flagged application rate" value={kpis.flaggedApplicationRate === null ? "Not enough data yet" : formatPercent(kpis.flaggedApplicationRate)} />
         <StatCard

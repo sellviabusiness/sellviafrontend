@@ -8,5 +8,5 @@ export default async function BillingSettingsPage() {
   const session = await getServerSession();
   if (!session) redirect("/login");
 
-  return <BillingSettingsView email={session.email} />;
+  return <BillingSettingsView />;
 }

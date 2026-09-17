@@ -8,8 +8,10 @@ import { StatusBadge, type StatusTone } from "@/components/reference/ui/status-b
 import { TrackingLinkBox } from "@/components/merchant/tracking-link-box";
 import { Alert } from "@/components/reference/ui/alert";
 import { buttonVariants } from "@/components/reference/ui/button";
+import { SkeletonTableRows } from "@/components/reference/ui/skeleton";
 import { listMyApplications, listAffiliateLinks, affiliateLinkUrl } from "@/lib/creator/real-store";
 import { getOffer } from "@/lib/merchant/real-store";
+import { formatCurrency } from "@/lib/merchant/format";
 import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { RealApplication, RealAffiliateLink, RealOffer, RealApplicationStatus } from "@/lib/merchant/types";
@@ -53,7 +55,7 @@ export function RealApplicationsView() {
   const linkByApplicationId = useMemo(() => Object.fromEntries(links.map((l) => [l.applicationId, l])), [links]);
 
   if (!ready) {
-    return <div className="h-64 animate-pulse rounded-[var(--radius-md)] border border-border bg-foreground/5" aria-hidden="true" />;
+    return <SkeletonTableRows count={4} columns={4} />;
   }
 
   return (
@@ -110,6 +112,9 @@ export function RealApplicationsView() {
                             <TrackingLinkBox url={affiliateLinkUrl(link.slug)} label="Your tracking link" />
                             <p className="text-xs text-muted-foreground-2">
                               Fallback discount code: <code>{link.discountCode}</code> · locked commission {link.lockedCommissionRate}%
+                            </p>
+                            <p className="text-xs text-muted-foreground-2">
+                              {link.clicksTotal} clicks · {link.salesTotal} sales · {formatCurrency(link.earningsCents / 100)} earned
                             </p>
                           </td>
                         </tr>

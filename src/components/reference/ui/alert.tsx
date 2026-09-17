@@ -16,7 +16,7 @@ export function Alert({
       role={variant === "error" ? "alert" : "status"}
       aria-live={variant === "error" ? "assertive" : "polite"}
       className={cn(
-        "rounded-[var(--radius-sm)] border px-4 py-3 text-sm",
+        "rounded-[var(--radius-sm)] border-2 px-4 py-3 text-sm",
         variant === "error" &&
           "border-danger-border bg-danger-bg text-danger",
         variant === "success" && "border-border text-success",

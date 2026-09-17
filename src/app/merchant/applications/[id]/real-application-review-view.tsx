@@ -90,34 +90,44 @@ export function RealApplicationReviewView({ applicationId }: { applicationId: st
         <StatusBadge tone={STATUS_TONE[application.status]}>{application.status}</StatusBadge>
       </div>
 
-      <Card className="grid grid-cols-3 divide-x divide-border p-0">
-        <div className="flex flex-col items-center gap-1 p-4 text-center">
-          <Radio className="h-4 w-4 text-muted-foreground-2" aria-hidden="true" />
-          <p className="text-sm font-medium text-foreground capitalize">{application.creatorPlatform ?? "—"}</p>
-          <p className="text-xs text-muted-foreground-2">Platform</p>
-        </div>
-        <div className="flex flex-col items-center gap-1 p-4 text-center">
-          <Users className="h-4 w-4 text-muted-foreground-2" aria-hidden="true" />
-          <p className="text-sm font-medium text-foreground">{application.creatorAudienceSize.toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground-2">Audience</p>
-        </div>
-        <div className="flex flex-col items-center gap-1 p-4 text-center">
-          <TrendingUp className="h-4 w-4 text-muted-foreground-2" aria-hidden="true" />
-          <p className="text-sm font-medium text-foreground">
-            {application.creatorEngagementRate !== null ? `${application.creatorEngagementRate.toFixed(1)}%` : "—"}
-          </p>
-          <p className="text-xs text-muted-foreground-2">Engagement</p>
-        </div>
-      </Card>
-
-      {application.creatorNiche && (
-        <p className="text-sm text-muted-foreground">Niche: {application.creatorNiche}</p>
-      )}
-      {application.audienceSnippet && (
+      {/*
+        The structured creatorPlatform/creatorAudienceSize/creatorEngagementRate/creatorNiche
+        fields and the free-text audienceSnippet are two independent snapshots of the same
+        "who is this creator" info, and in practice disagree — a creator whose profile fields
+        were never fully filled in (platform/engagement null, audienceSize left at whatever
+        default) can still have typed accurate numbers into the free-text box on the application
+        form itself. Showing both at once reads as a bug (it looks like one), so this shows
+        whichever source actually has something real in it, not both — audienceSnippet first
+        since it's creator-authored and has consistently been the more complete of the two.
+      */}
+      {application.audienceSnippet ? (
         <Card className="p-5">
           <p className="mb-1 text-xs font-medium text-muted-foreground">From the creator</p>
           <p className="text-sm text-foreground">{application.audienceSnippet}</p>
         </Card>
+      ) : (
+        <>
+          <Card className="grid grid-cols-3 divide-x divide-border p-0">
+            <div className="flex flex-col items-center gap-1 p-4 text-center">
+              <Radio className="h-4 w-4 text-muted-foreground-2" aria-hidden="true" />
+              <p className="text-sm font-medium text-foreground capitalize">{application.creatorPlatform ?? "—"}</p>
+              <p className="text-xs text-muted-foreground-2">Platform</p>
+            </div>
+            <div className="flex flex-col items-center gap-1 p-4 text-center">
+              <Users className="h-4 w-4 text-muted-foreground-2" aria-hidden="true" />
+              <p className="text-sm font-medium text-foreground">{application.creatorAudienceSize.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground-2">Audience</p>
+            </div>
+            <div className="flex flex-col items-center gap-1 p-4 text-center">
+              <TrendingUp className="h-4 w-4 text-muted-foreground-2" aria-hidden="true" />
+              <p className="text-sm font-medium text-foreground">
+                {application.creatorEngagementRate !== null ? `${application.creatorEngagementRate.toFixed(1)}%` : "—"}
+              </p>
+              <p className="text-xs text-muted-foreground-2">Engagement</p>
+            </div>
+          </Card>
+          {application.creatorNiche && <p className="text-sm text-muted-foreground">Niche: {application.creatorNiche}</p>}
+        </>
       )}
 
       {actionError && <Alert variant="error">{actionError}</Alert>}

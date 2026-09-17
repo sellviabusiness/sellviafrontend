@@ -30,9 +30,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-figtree);
+  --font-sans: var(--font-instrument-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-outfit);
+  --font-heading: var(--font-bricolage-grotesque);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -126,7 +126,7 @@
   --chart-3: #A1A1AA;
   --chart-4: #D4D4D8;
   --chart-5: #E4E4E7;
-  --radius: 0.625rem;
+  --radius: 0px;
   /* 12-col grid container cap — stops content stretching edge-to-edge past 2xl.
      Not breakpoint-tied; only used via Container (layout/container.tsx). */
   --container-max: 90rem; /* 1440px */
@@ -240,16 +240,21 @@
   --ref-muted-foreground: #52525b;
   --ref-muted-foreground-2: #71717a;
   --ref-card: #ffffff;
-  --ref-border: #e4e4e7;
-  --ref-border-hover: #d4d4d8;
+  /* 2026-09-10 neo-brutalist pass: border went from a near-invisible hairline
+     (#e4e4e7) to near-black — deliberate, not a mistake if this reads "heavy"
+     compared to the old design. See the pastel/shadow block below this one. */
+  --ref-border: #111111;
+  --ref-border-hover: #000000;
   --ref-accent: #bfff13;
   --ref-accent-foreground: #000000;
   --ref-danger: #b91c1c;
   --ref-danger-border: #fca5a5;
   --ref-danger-bg: #fef2f2;
   --ref-success: #15803d;
-  --ref-radius-sm: 10px;
-  --ref-radius-md: 12px;
+  /* 2026-09-10: pushed to full-sharp per explicit request — no rounding anywhere on
+     rectangular surfaces (cards, buttons, inputs, modals, dropdowns). */
+  --ref-radius-sm: 0px;
+  --ref-radius-md: 0px;
 }
 
 .dark {
@@ -258,14 +263,74 @@
   --ref-muted-foreground: #a1a1aa;
   --ref-muted-foreground-2: #71717a;
   --ref-card: #000000;
-  --ref-border: #27272a;
-  --ref-border-hover: #3f3f46;
+  /* Inverted vs. light mode on purpose: a black border on a black card is
+     invisible, so dark mode needs a light, high-contrast line instead. */
+  --ref-border: #e4e4e7;
+  --ref-border-hover: #ffffff;
   --ref-accent: #bfff13;
   --ref-accent-foreground: #000000;
   --ref-danger: #f87171;
   --ref-danger-border: #7f1d1d;
   --ref-danger-bg: #1a0a0a;
   --ref-success: #4ade80;
+}
+
+/*
+ * Neo-brutalist accent system (2026-09-10, full redesign per user reference —
+ * "clean SaaS + neo-brutalism": strong dark borders (above), hard offset
+ * shadows, pastel accents used sparingly for KPI cards/badges/highlights, not
+ * as the base palette. `--shadow-color` drives .shadow-brutal* below and is
+ * intentionally the same variable as the border color: in light mode a dark
+ * shadow reads as a cut-paper drop shadow; in dark mode there is no visible
+ * "shadow" a light color could fake convincingly, so it collapses to a thin
+ * outline glow instead of a shadow that would look like a stray light source.
+ * Pastels are plain global tokens (not `--ref-`-namespaced) — nothing else in
+ * the app claims these names, and custom properties inherit down through
+ * `.reference-theme` the same as any other DOM descendant, so one definition
+ * here already reaches every real screen without a second copy inside it.
+ */
+:root {
+  --shadow-color: var(--ref-border);
+  --pastel-yellow: #fdf0a4;
+  --pastel-yellow-foreground: #4a3b00;
+  --pastel-green: #c8f4d9;
+  --pastel-green-foreground: #0a4a26;
+  --pastel-lavender: #e3ddff;
+  --pastel-lavender-foreground: #2f1f8a;
+  --pastel-pink: #ffdce8;
+  --pastel-pink-foreground: #7a1240;
+  --pastel-blue: #d6ecff;
+  --pastel-blue-foreground: #073b6b;
+}
+
+.dark {
+  --shadow-color: var(--ref-border);
+  --pastel-yellow: #4a3f10;
+  --pastel-yellow-foreground: #fdf0a4;
+  --pastel-green: #113322;
+  --pastel-green-foreground: #c8f4d9;
+  --pastel-lavender: #241a4d;
+  --pastel-lavender-foreground: #e3ddff;
+  --pastel-pink: #401a2b;
+  --pastel-pink-foreground: #ffdce8;
+  --pastel-blue: #0e2c47;
+  --pastel-blue-foreground: #d6ecff;
+}
+
+/* Hard offset shadows — the other half of the neo-brutalist language besides
+   strong borders. Use sparingly (cards, primary buttons, modals), never as a
+   blanket rule on every element (that reads as noise, not structure). */
+.shadow-brutal-sm {
+  box-shadow: 3px 3px 0 0 var(--shadow-color);
+}
+.shadow-brutal {
+  box-shadow: 5px 5px 0 0 var(--shadow-color);
+}
+/* Pressed/active state: shadow collapses and the element nudges into the
+   space it vacated — a physical "pushed button" feel instead of a flat color
+   swap. Pair with `active:translate-x-[3px] active:translate-y-[3px]`. */
+.shadow-brutal-pressed {
+  box-shadow: 0 0 0 0 var(--shadow-color);
 }
 
 .reference-theme {

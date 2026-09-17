@@ -463,15 +463,21 @@ export interface UserSummary {
   createdAt?: string;
 }
 
+// BUG FOUND LIVE — same fix as lib/admin/real-store.ts's listUsers(): a screen meant for
+// moderating merchants/creators had admin accounts in it too, which is how an admin suspending
+// themselves (or another admin) ever became reachable through this list at all. Filtered out
+// here, at the one place every caller of this function goes through.
 export function getUserSummaries(): UserSummary[] {
   const suspensions = readRecord().suspensions;
-  return getAllUsers().map((u) => ({
-    email: u.email,
-    roles: u.roles,
-    verified: u.verified,
-    suspended: suspensions.some((s) => s.email.toLowerCase() === u.email.toLowerCase() && s.suspended),
-    createdAt: u.createdAt,
-  }));
+  return getAllUsers()
+    .filter((u) => !u.roles.includes("admin"))
+    .map((u) => ({
+      email: u.email,
+      roles: u.roles,
+      verified: u.verified,
+      suspended: suspensions.some((s) => s.email.toLowerCase() === u.email.toLowerCase() && s.suspended),
+      createdAt: u.createdAt,
+    }));
 }
 
 export function isSuspended(email: string): boolean {

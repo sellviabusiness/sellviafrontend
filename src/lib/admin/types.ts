@@ -202,6 +202,40 @@ export interface RealUser {
   updatedAt: string;
 }
 
+/** GET /admin/users/{userId}/stats (2026-09-13) — switch on `role`, not on which dashboard field
+ *  is non-null; the OTHER one is always null by construction (an account is merchant XOR
+ *  creator, same exclusivity RoleSelector enforces at signup — see its own doc comment). */
+export interface AdminMerchantDashboardStats {
+  offersTotal: number;
+  offersLive: number;
+  clicksTotal: number;
+  salesAcceptedTotal: number;
+  conversionRate: number | null;
+  amountBilledCents: number;
+}
+
+export interface AdminCreatorDashboardStats {
+  linksTotal: number;
+  clicksTotal: number;
+  salesAttributedTotal: number;
+  walletBalanceCents: number;
+  lifetimePaidOutCents: number;
+  hasPayoutThisPeriod: boolean;
+}
+
+export interface AdminCreatorEarningsBreakdown {
+  pendingCents: number;
+  billedCents: number;
+  paidCents: number;
+}
+
+export interface AdminUserStats {
+  role: "merchant" | "creator";
+  merchantDashboard: AdminMerchantDashboardStats | null;
+  creatorDashboard: AdminCreatorDashboardStats | null;
+  creatorEarningsBreakdown: AdminCreatorEarningsBreakdown | null;
+}
+
 /** No entityLabel/ownerEmail the way the mock's ModerationFlag has — entityId is opaque, and
  *  there's no admin endpoint to resolve a sale/application id to anything friendlier (same shape
  *  of gap as RealSale's unresolvable affiliateLinkId). Shown as entityType + a truncated id. */
@@ -219,16 +253,6 @@ export interface RealModerationFlag {
   resolutionNote: string | null;
   createdAt: string;
   updatedAt: string;
-}
-
-export type RealWaitlistStatus = "waiting" | "invited";
-
-export interface RealWaitlistEntry {
-  id: string;
-  email: string;
-  status: RealWaitlistStatus;
-  invitedAt: string | null;
-  createdAt: string;
 }
 
 /** Several fields `null` until enough data exists to compute meaningfully — not a bug, a real

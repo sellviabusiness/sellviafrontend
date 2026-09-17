@@ -10,6 +10,7 @@ import { Select } from "@/components/reference/ui/select";
 import { StatusBadge, type StatusTone } from "@/components/reference/ui/status-badge";
 import { ConfirmDialog } from "@/components/reference/ui/confirm-dialog";
 import { Alert } from "@/components/reference/ui/alert";
+import { SkeletonRows } from "@/components/reference/ui/skeleton";
 import { listMyOffers, setOfferStatus, deleteOffer } from "@/lib/merchant/real-store";
 import { formatCurrency } from "@/lib/merchant/format";
 import { ApiError } from "@/lib/api";
@@ -61,7 +62,7 @@ export function RealOffersView({ email }: { email: string }) {
   const filtered = statusFilter === "all" ? offers : offers.filter((o) => o.status === statusFilter);
 
   if (!ready) {
-    return <div className="h-64 animate-pulse rounded-[var(--radius-md)] border border-border bg-foreground/5" aria-hidden="true" />;
+    return <SkeletonRows count={3} />;
   }
 
   return (

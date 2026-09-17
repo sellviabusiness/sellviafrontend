@@ -36,6 +36,7 @@ export function SellViaLogo({
   height = 28,
   asLink = true,
   href = "/",
+  chip = false,
 }: {
   className?: string;
   height?: number;
@@ -44,6 +45,12 @@ export function SellViaLogo({
    *  (onboarding, dashboard) pass "/dashboard" so the logo doesn't take a signed-in user out to
    *  the marketing placeholder. */
   href?: string;
+  /** Force the solid chip backdrop dark mode already gets, even in light mode — for a caller
+   *  that sits on a colored (not plain page) background, e.g. the topbars' lime header: the
+   *  light-mode mark's own lime accent icon would otherwise blend straight into a lime bar
+   *  behind it, the exact "lime on lime" problem already fixed everywhere else this app renders
+   *  accent-colored content. */
+  chip?: boolean;
 }) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -83,9 +90,9 @@ export function SellViaLogo({
     />
   );
 
-  const mark = isDark ? (
+  const mark = isDark || chip ? (
     <span
-      className={cn("inline-flex items-center justify-center rounded-[var(--radius-sm)] bg-[#0A0A0A]", className)}
+      className={cn("inline-flex items-center justify-center rounded-[var(--radius-sm)] bg-background", className)}
       style={{
         paddingLeft: Math.round(height * 0.45),
         paddingRight: Math.round(height * 0.45),

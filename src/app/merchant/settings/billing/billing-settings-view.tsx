@@ -1,43 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Card } from "@/components/reference/ui/card";
-import { Button } from "@/components/reference/ui/button";
-import { ConnectionStatusBanner } from "@/components/onboarding/connection-status";
-import { billingAdapter } from "@/lib/onboarding/integrations/billing";
-import { getOnboardingRecord } from "@/lib/onboarding/store";
-import type { ConnectionStatus } from "@/lib/onboarding/types";
+import { buttonVariants } from "@/components/reference/ui/button";
 
 /**
- * D11 — "post-onboarding entry point into the same billing-connect flow as C2." Reuses C2's
- * exact adapter (lib/onboarding/integrations/billing.ts) and status banner
- * (components/onboarding/connection-status.tsx) rather than a second billing-connect
- * implementation — the only difference from the onboarding step is this screen's chrome
- * (Settings page, not the onboarding wizard) and that it's reachable any time after onboarding,
- * not just once during it.
+ * BACKEND CONFIRMED LIVE — this used to be a "connect a billing method" screen backed by
+ * OnboardingRecord.billingStatus (the same mock C2 concept the onboarding billing-connect step
+ * used, since removed). Backend confirmed there's no such thing to connect: Switch bills per
+ * cycle via an invoice, paid through Switch's own hosted checkout when it's due — nothing is
+ * pre-registered or stored ahead of time, in mock or real mode. Rewritten as a plain informational
+ * page pointing at where a cycle actually gets paid (/merchant/billing) rather than a status this
+ * account can no longer have.
  */
-export function BillingSettingsView({ email }: { email: string }) {
-  const [status, setStatus] = useState<ConnectionStatus>("not_connected");
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setStatus(getOnboardingRecord(email)?.billingStatus ?? "not_connected");
-    setReady(true);
-  }, [email]);
-
-  async function handleConnect() {
-    setStatus("connecting");
-    const result = await billingAdapter.connect(email);
-    setStatus(result.status);
-  }
-
-  if (!ready) {
-    return <div className="h-64 animate-pulse rounded-[var(--radius-md)] border border-border bg-foreground/5" aria-hidden="true" />;
-  }
-
+export function BillingSettingsView() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <Link href="/merchant/settings" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
@@ -46,21 +23,18 @@ export function BillingSettingsView({ email }: { email: string }) {
 
       <div>
         <h1 className="font-[family-name:var(--font-heading)] text-xl font-semibold text-foreground">Billing method</h1>
-        <p className="text-sm text-muted-foreground">SellVia bills your connected account for commission owed each cycle.</p>
+        <p className="text-sm text-muted-foreground">SellVia bills your account for commission owed each cycle.</p>
       </div>
 
-      <Card className="space-y-4 p-6">
-        <ConnectionStatusBanner
-          status={status}
-          notConnectedLabel="Billing connection required"
-          connectingLabel="Connecting billing…"
-          connectedLabel="Billing connected — ready"
-        />
-        {status !== "connected" && (
-          <Button variant="secondary" className="w-full" onClick={handleConnect} loading={status === "connecting"}>
-            {status === "connecting" ? "Connecting…" : "Connect billing"}
-          </Button>
-        )}
+      <Card className="space-y-3 p-6">
+        <p className="text-sm text-foreground">
+          There&apos;s no payment method to connect ahead of time — Switch sends an invoice each billing
+          cycle, and you pay it (card, bank transfer, JazzCash, or EasyPaisa, chosen at checkout) through
+          Switch&apos;s own hosted page when it&apos;s due.
+        </p>
+        <Link href="/merchant/billing" className={buttonVariants({ variant: "secondary", className: "w-full" })}>
+          View billing cycles
+        </Link>
       </Card>
     </div>
   );

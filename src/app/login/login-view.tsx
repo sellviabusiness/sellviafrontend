@@ -38,7 +38,7 @@ export function LoginView() {
             onAuthenticated={() => router.replace(returnTo)}
           />
         ) : (
-          <ClerkLoginForm returnTo={returnTo} />
+          <ClerkLoginForm returnTo={returnTo} blockRoles={["admin"]} />
         )}
 
         <p className="mt-3 text-right text-sm">

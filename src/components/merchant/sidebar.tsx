@@ -45,8 +45,8 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             className={cn(
               "flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium transition-colors",
               active
-                ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
+                ? "border-2 border-border bg-accent text-accent-foreground shadow-brutal-sm"
+                : "border-2 border-transparent text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
             )}
           >
             <Icon className="h-4 w-4" aria-hidden="true" />
@@ -89,7 +89,9 @@ function SettingsRailLink() {
       aria-current={active ? "page" : undefined}
       className={cn(
         "group relative mt-auto flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] transition-colors",
-        active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-foreground/10 hover:text-foreground",
+        active
+          ? "border-2 border-border bg-accent text-accent-foreground shadow-brutal-sm"
+          : "border-2 border-transparent text-muted-foreground hover:bg-foreground/10 hover:text-foreground",
       )}
     >
       <Settings className="h-5 w-5" aria-hidden="true" />
@@ -121,7 +123,9 @@ function RailLinks() {
             aria-current={active ? "page" : undefined}
             className={cn(
               "group relative flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] transition-colors",
-              active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-foreground/10 hover:text-foreground",
+              active
+          ? "border-2 border-border bg-accent text-accent-foreground shadow-brutal-sm"
+          : "border-2 border-transparent text-muted-foreground hover:bg-foreground/10 hover:text-foreground",
             )}
           >
             <Icon className="h-5 w-5" aria-hidden="true" />
@@ -142,7 +146,7 @@ function RailLinks() {
 /** Desktop rail — icon-only (Pinterest-style), `sm`+ only. */
 export function MerchantSidebar() {
   return (
-    <nav aria-label="Merchant navigation" className="hidden w-16 shrink-0 flex-col items-center gap-1 border-r border-border py-4 sm:flex">
+    <nav aria-label="Merchant navigation" className="hidden w-16 shrink-0 flex-col items-center gap-1 py-4 sm:flex">
       <RailLinks />
       <SettingsRailLink />
     </nav>
