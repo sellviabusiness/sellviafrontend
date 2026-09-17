@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Megaphone, ClipboardList, Receipt, CreditCard, Settings, X } from "lucide-react";
+import { LayoutGrid, Package, Megaphone, ClipboardList, Receipt, CreditCard, Settings, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SETTINGS_HREF = "/merchant/settings";
@@ -24,6 +24,7 @@ const SETTINGS_HREF = "/merchant/settings";
  */
 const NAV_ITEMS = [
   { href: "/merchant/overview", label: "Overview", icon: LayoutGrid },
+  { href: "/merchant/products", label: "Products", icon: Package },
   { href: "/merchant/offers", label: "Offers", icon: Megaphone },
   { href: "/merchant/applications", label: "Applications", icon: ClipboardList },
   { href: "/merchant/sales", label: "Sales", icon: Receipt },
