@@ -123,6 +123,8 @@ export async function listShopifyCatalog(): Promise<ShopifyCatalogItemRead[]> {
   return apiRequest<ShopifyCatalogItemRead[]>("/products/shopify-catalog");
 }
 
+export type CustomerDiscountType = "percentage" | "fixed_amount";
+
 export interface CreateRealOfferInput {
   name: string;
   priceCents: number;
@@ -136,6 +138,21 @@ export interface CreateRealOfferInput {
    *  `createProduct`) — required, 422s without it. Offer keeps its own independent copy of
    *  name/price/currency/image/category; this is provenance, not a live link. */
   productId: string;
+  /** Optional discount type for customers (`percentage` or `fixed_amount`). */
+  customerDiscountType?: CustomerDiscountType;
+  /** Optional discount value (percentage points if `customerDiscountType` is `"percentage"`,
+   *  cents if `"fixed_amount"`). */
+  customerDiscountValue?: number;
+  /** Whether the product/service is provided as part of the offer. */
+  productProvided?: boolean;
+  /** Whether return/refund of the product is required per the offer terms. */
+  productReturnRequired?: boolean;
+  /** Number of days after purchase within which the product can be returned. */
+  returnWindowDays?: number;
+  /** Eligibility rules and restrictions as arbitrary metadata. */
+  eligibilityRules?: Record<string, unknown>;
+  /** Marketing resources (banners, copy, graphics, etc.) as arbitrary metadata. */
+  marketingResources?: Record<string, unknown>;
 }
 
 /** Always creates as `draft` — there is no "publish on create" option server-side. Callers that
@@ -143,6 +160,17 @@ export interface CreateRealOfferInput {
  *  `publishOffer` immediately after, as two real requests presented as one guided flow. */
 export async function createOffer(input: CreateRealOfferInput): Promise<RealOffer> {
   return apiRequest<RealOffer>("/offers", { method: "POST", body: input });
+}
+
+/** Every field optional — PATCH semantics: omitted key = unchanged, explicit `null` on a
+ *  nullable field clears it. Used only for `status === "draft"` offers (409 OFFER_NOT_DRAFT
+ *  otherwise) — Task 11's Edit button is the only caller and already gates on that client-side. */
+export type UpdateRealOfferInput = Partial<Omit<CreateRealOfferInput, "productId">> & {
+  productId?: string;
+};
+
+export async function updateOffer(offerId: string, input: UpdateRealOfferInput): Promise<RealOffer> {
+  return apiRequest<RealOffer>(`/offers/${offerId}`, { method: "PATCH", body: input });
 }
 
 /** Every status included (draft/pending_vetting/live/paused/ended) — the public `GET /offers`
