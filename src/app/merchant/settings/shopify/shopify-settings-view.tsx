@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/reference/ui/card";
-import { Input } from "@/components/reference/ui/input";
+import { PasswordInput } from "@/components/reference/ui/password-input";
 import { Button } from "@/components/reference/ui/button";
 import { Alert } from "@/components/reference/ui/alert";
 import { StatusBadge } from "@/components/reference/ui/status-badge";
@@ -134,16 +134,22 @@ export function ShopifySettingsView() {
             Disconnect
           </Button>
         ) : (
-          <div className="flex gap-2">
-            <Input
-              type="password"
+          <div className="space-y-3">
+            <PasswordInput
+              label="Shopify Admin API access token"
+              id="shopify-admin-token"
               placeholder="shpat_..."
               value={token}
               onChange={(e) => setToken(e.target.value)}
-              className="flex-1"
               disabled={!domainConnected}
             />
-            <Button type="button" onClick={handleConnect} loading={submitting} disabled={!domainConnected || !token.trim()}>
+            <Button
+              type="button"
+              className="w-full"
+              onClick={handleConnect}
+              loading={submitting}
+              disabled={!domainConnected || !token.trim()}
+            >
               Connect
             </Button>
           </div>
