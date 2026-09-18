@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, CreditCard, ShieldCheck, ChevronRight, Trash2 } from "lucide-react";
+import { Building2, CreditCard, ShieldCheck, ShoppingBag, ChevronRight, Trash2 } from "lucide-react";
 import { Card } from "@/components/reference/ui/card";
 // import { Moon } from "lucide-react"; // hidden for now — see below
 // import { ThemeToggle } from "@/components/reference/theme/theme-toggle";
@@ -10,6 +10,7 @@ const SECTIONS = [
   { href: "/merchant/settings/business", icon: Building2, title: "Business profile", description: "Business name, category, and store details." },
   { href: "/merchant/settings/billing", icon: CreditCard, title: "Billing method", description: "How SellVia bills you for commission each cycle." },
   { href: "/merchant/settings/security", icon: ShieldCheck, title: "Security", description: "Password, two-factor authentication, and active sessions." },
+  { href: "/merchant/settings/shopify", icon: ShoppingBag, title: "Shopify connection", description: "Connect your store domain and Admin API." },
 ] as const;
 
 /** D10/D11/D12's shared hub, plus F2's Delete Account entry point (Playbook 06) kept visually
