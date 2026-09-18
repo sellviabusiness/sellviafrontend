@@ -23,12 +23,12 @@ const STATUS_TONE: Record<RealOfferStatus, StatusTone> = {
 };
 
 /**
- * Real-mode counterpart to offer-detail-view.tsx. No Edit action — offers have no real edit
- * endpoint at all (deliberate; see API-ENDPOINTS.md's "Known Gaps"), so the only path to change
- * a live offer's fixed details is deleting and creating a fresh one. No tracking link either —
- * an offer itself has nothing shareable in the real model; that only exists per-creator, once an
- * application is approved (their own AffiliateLink). No per-offer stats yet — lands with the
- * Applications/Sales real-mode pass, not guessed at here.
+ * Real-mode counterpart to offer-detail-view.tsx. Edit is available only while
+ * `status === "draft"` (`PATCH /offers/{id}`, 409 OFFER_NOT_DRAFT otherwise) — see
+ * offer-form.tsx's edit mode. No tracking link — an offer itself has nothing shareable in the
+ * real model; that only exists per-creator, once an application is approved (their own
+ * AffiliateLink). No per-offer stats yet — lands with the Applications/Sales real-mode pass, not
+ * guessed at here.
  */
 export function RealOfferDetailView({ offerId }: { offerId: string }) {
   const router = useRouter();
@@ -134,6 +134,11 @@ export function RealOfferDetailView({ offerId }: { offerId: string }) {
             </Link>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            {offer.status === "draft" && (
+              <Link href={`/merchant/offers/${offer.id}/edit`}>
+                <Button type="button" variant="secondary" className="rounded-full">Edit</Button>
+              </Link>
+            )}
             {offer.status === "draft" && (
               <Button className="rounded-full" onClick={() => handleSetStatus("live")} loading={busy}>Publish</Button>
             )}

@@ -188,8 +188,16 @@ function OfferRow({ offer, onChanged }: { offer: RealOffer; onChanged: () => voi
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {offer.status === "draft" && (
+            <Link href={`/merchant/offers/${offer.id}/edit`}>
+              <Button type="button" variant="secondary" className="rounded-full">Edit</Button>
+            </Link>
+          )}
+          {offer.status === "draft" && (
             <Button className="rounded-full" onClick={() => handleSetStatus("live")} loading={busy}>Publish</Button>
           )}
+          {/* ponytail: Edit/Publish/Pause/Resume/End JSX duplicated between real-offers-view.tsx
+              and real-offer-detail-view.tsx — extract a shared OfferStatusActions component if a
+              third copy of this block appears. */}
           {offer.status === "live" && (
             <Button variant="secondary" className="rounded-full" onClick={() => handleSetStatus("paused")} loading={busy}>Pause</Button>
           )}

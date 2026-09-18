@@ -109,3 +109,26 @@ export async function getCreatorDashboardTimeseries(
 export async function getCreatorEarningsBreakdown(): Promise<RealCreatorEarningsBreakdown> {
   return apiRequest<RealCreatorEarningsBreakdown>("/analytics/creator-dashboard/earnings-breakdown");
 }
+
+// ---------------------------------------------------------------------------
+// Profile
+// ---------------------------------------------------------------------------
+
+export interface CreatorProfileMe {
+  id: string;
+  userId: string;
+  audienceSize: number;
+  niche: string | null;
+  engagementRate: number | null;
+  platform: string | null;
+  handle: string | null;
+  createdAt: string;
+  updatedAt: string;
+  name: string | null;
+  avatarUrl: string | null;
+  offersJoinedCount: number;
+}
+
+export async function getCreatorProfileMe(): Promise<CreatorProfileMe> {
+  return apiRequest<CreatorProfileMe>("/users/creator-profile/me");
+}

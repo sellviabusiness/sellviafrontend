@@ -1,4 +1,4 @@
-import { getServerSession } from "@/lib/auth/session";
+﻿import { getServerSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { isMockMode } from "@/lib/auth/config";
 import { NewOfferView } from "./new-offer-view";
@@ -10,5 +10,5 @@ export default async function NewOfferPage() {
   const session = await getServerSession();
   if (!session) redirect("/login");
 
-  return isMockMode ? <NewOfferView email={session.email} /> : <RealNewOfferView email={session.email} />;
+  return isMockMode ? <NewOfferView email={session.email} /> : <RealNewOfferView />;
 }
