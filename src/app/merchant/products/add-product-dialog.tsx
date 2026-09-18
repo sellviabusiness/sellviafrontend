@@ -104,6 +104,7 @@ export function AddProductDialog({ open, onOpenChange, onProductAdded }: AddProd
   // Tab C — manual entry
   const [manualName, setManualName] = useState("");
   const [manualPrice, setManualPrice] = useState("");
+  const [manualProductUrl, setManualProductUrl] = useState("");
   const [manualCategory, setManualCategory] = useState<"physical" | "digital" | "">("");
   const [manualErrors, setManualErrors] = useState<Record<string, string>>({});
   const [manualSubmitting, setManualSubmitting] = useState(false);
@@ -127,10 +128,12 @@ export function AddProductDialog({ open, onOpenChange, onProductAdded }: AddProd
         priceCents: Math.round(priceValue * 100),
         currency: "PKR",
         category: manualCategory || undefined,
+        productUrl: manualProductUrl.trim() || undefined,
       });
       onProductAdded(product);
       setManualName("");
       setManualPrice("");
+      setManualProductUrl("");
       setManualCategory("");
     } catch (err) {
       setManualError(err instanceof ApiError ? err.uiMessage : "Something went wrong. Please try again.");
@@ -221,6 +224,10 @@ export function AddProductDialog({ open, onOpenChange, onProductAdded }: AddProd
               <Label htmlFor="manual-price" required>Price (PKR)</Label>
               <Input id="manual-price" type="number" min={0} value={manualPrice} onChange={(e) => setManualPrice(e.target.value)} invalid={Boolean(manualErrors.price)} />
               {manualErrors.price && <FormErrorText id="manual-price-error">{manualErrors.price}</FormErrorText>}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="manual-product-url">Product page URL</Label>
+              <Input id="manual-product-url" type="url" placeholder="https://yourstore.com/products/glow-serum" value={manualProductUrl} onChange={(e) => setManualProductUrl(e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label>Category</Label>

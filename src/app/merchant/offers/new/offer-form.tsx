@@ -36,7 +36,7 @@ interface OfferFormProps {
    *  (see types.ts) — those sections always start from their defaults, even in edit mode, since
    *  there's nothing on the offer read-shape to seed them from. */
   initialOffer?: RealOffer;
-  onSaved: (offer: RealOffer) => void;
+  onSaved: (offer: RealOffer) => void | Promise<void>;
 }
 
 export function OfferForm({ mode, initialOffer, onSaved }: OfferFormProps) {
@@ -84,6 +84,8 @@ export function OfferForm({ mode, initialOffer, onSaved }: OfferFormProps) {
     if (!category) nextErrors.category = "Choose a product type.";
     const commission = Number(commissionRate);
     if (!commissionRate.trim() || Number.isNaN(commission) || commission <= 0) nextErrors.commissionRate = "Enter a commission rate.";
+    const productUrl = selectedProduct?.productUrl ?? initialOffer?.productUrl ?? "";
+    if (!productUrl.trim()) nextErrors.productUrl = "This product has no product page URL — add one from the Products page first.";
 
     if (discountEnabled) {
       const discountNum = Number(discountValue);
@@ -118,7 +120,7 @@ export function OfferForm({ mode, initialOffer, onSaved }: OfferFormProps) {
       currency: "PKR",
       category: category as "physical" | "digital",
       commissionRate: commission,
-      productUrl: selectedProduct?.productUrl ?? initialOffer?.productUrl ?? "",
+      productUrl,
       imageUrl: imageUrl ?? undefined,
       customerDiscountType: discountEnabled ? discountType : undefined,
       // Percentage points if "percentage", but CENTS if "fixed_amount" (real-store.ts's own doc
@@ -139,10 +141,13 @@ export function OfferForm({ mode, initialOffer, onSaved }: OfferFormProps) {
         mode === "create"
           ? await createOffer({ ...basePayload, productId: selectedProduct!.id })
           : await updateOffer(initialOffer!.id, basePayload);
-      onSaved(offer);
+      // Keep the button disabled/loading through onSaved's own async work (e.g. publishing and
+      // navigating away) — only reset it in the catch below if something actually failed, so a
+      // rejected publish doesn't leave the button re-enabled with no error shown, and a
+      // successful one can't be double-submitted while router.push is still in flight.
+      await onSaved(offer);
     } catch (err) {
       setSubmitError(err instanceof ApiError ? err.uiMessage : "Something went wrong. Please try again.");
-    } finally {
       setSubmitting(false);
     }
   }
@@ -187,6 +192,7 @@ export function OfferForm({ mode, initialOffer, onSaved }: OfferFormProps) {
                 ))}
               </div>
               {errors.product && <FormErrorText id="product-error">{errors.product}</FormErrorText>}
+              {errors.productUrl && <FormErrorText id="product-url-error">{errors.productUrl}</FormErrorText>}
             </>
           )}
         </Card>
