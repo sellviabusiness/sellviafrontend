@@ -289,3 +289,35 @@ export async function getMerchantDashboardTimeseries(
 ): Promise<RealMerchantTimeseriesPoint[]> {
   return apiRequest<RealMerchantTimeseriesPoint[]>(`/analytics/merchant-dashboard/timeseries?granularity=${granularity}&range=${range}`);
 }
+
+// ---------------------------------------------------------------------------
+// Shopify Admin connection
+// ---------------------------------------------------------------------------
+
+export type ShopifyAdminConnectionStatus = "needs_admin_token" | "connected" | "revoked";
+
+export interface ShopifyAdminConnectionState {
+  shopDomain: string | null;
+  status: ShopifyAdminConnectionStatus;
+  connected: boolean;
+}
+
+export async function getShopifyAdminConnection(): Promise<ShopifyAdminConnectionState> {
+  return apiRequest<ShopifyAdminConnectionState>("/users/merchant-profile/shopify-admin-connection");
+}
+
+/** 422 SHOPIFY_DOMAIN_NOT_CONNECTED surfaces via the thrown ApiError — caller (Task 9) points
+ *  the merchant at the existing shop-domain connect flow (onboarding's store-connect, also
+ *  surfaced read-only on Settings per Task 9's own doc comment) when this code is seen. */
+export async function connectShopifyAdmin(accessToken: string): Promise<ShopifyAdminConnectionState> {
+  return apiRequest<ShopifyAdminConnectionState>("/users/merchant-profile/shopify-admin-connection", {
+    method: "POST",
+    body: { accessToken },
+  });
+}
+
+export async function disconnectShopifyAdmin(): Promise<ShopifyAdminConnectionState> {
+  return apiRequest<ShopifyAdminConnectionState>("/users/merchant-profile/shopify-admin-connection", {
+    method: "DELETE",
+  });
+}
