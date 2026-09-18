@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, AlertTriangle, CheckCircle2, ImageOff } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle2, ImageOff, Store } from "lucide-react";
 import { Card } from "@/components/reference/ui/card";
 import { Button } from "@/components/reference/ui/button";
 import { Alert } from "@/components/reference/ui/alert";
@@ -99,6 +99,13 @@ export function RealOfferApplyView({ email, offerId }: { email: string; offerId:
         <div className="p-6">
           <h1 className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-foreground">{offer.name}</h1>
           <p className="mt-1 text-sm capitalize text-muted-foreground">{offer.category}</p>
+          <Link
+            href={`/creator/merchants/${offer.merchantProfileId}`}
+            className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground hover:underline"
+          >
+            <Store className="h-3.5 w-3.5" aria-hidden="true" />
+            by {offer.merchantName ?? "this merchant"}
+          </Link>
           <div className="mt-4 flex items-center gap-3">
             <span className="font-[family-name:var(--font-heading)] text-xl font-semibold text-foreground">
               {formatCurrency(offer.priceCents / 100)}

@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { ImageOff, CheckCircle2 } from "lucide-react";
+import { ImageOff, CheckCircle2, Store } from "lucide-react";
 import { Card } from "@/components/reference/ui/card";
 import { StatusBadge } from "@/components/reference/ui/status-badge";
 import { buttonVariants } from "@/components/reference/ui/button";
@@ -13,6 +15,10 @@ import type { RealOffer } from "@/lib/merchant/types";
  * applications, same as the mock. Every card still opens through the detail page rather than
  * applying inline, same reasoning as the mock: one real mutation call site, and the real
  * SELF_DEALING_BLOCKED/APPLICATION_ALREADY_EXISTS errors surface there before the write happens.
+ *
+ * Merchant name/avatar come straight off `offer.merchantName`/`merchantAvatarUrl` (backend PR #37,
+ * 2026-09-18 — snapshotted onto Offer, no separate per-card fetch). Both are `null` on any Offer
+ * created before that PR shipped — fall back to a generic label rather than fabricating one.
  */
 export function RealOfferBrowseCard({ offer, alreadyApplied }: { offer: RealOffer; alreadyApplied: boolean }) {
   return (
@@ -43,6 +49,16 @@ export function RealOfferBrowseCard({ offer, alreadyApplied }: { offer: RealOffe
           </div>
         </div>
       </Link>
+
+      <div className="px-5">
+        <Link
+          href={`/creator/merchants/${offer.merchantProfileId}`}
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline"
+        >
+          <Store className="h-3 w-3" aria-hidden="true" />
+          by {offer.merchantName ?? "this merchant"}
+        </Link>
+      </div>
 
       <div className="p-5 pt-3">
         {alreadyApplied ? (

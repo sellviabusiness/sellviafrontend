@@ -10,6 +10,7 @@ import type {
   TimeseriesGranularity,
   TimeseriesRange,
 } from "./types";
+import type { CreatorProfileMe } from "@/lib/creator/real-store";
 
 /**
  * REAL backend layer for the Merchant Offer domain (API-ENDPOINTS.md, 2026-09-05) — the
@@ -338,4 +339,17 @@ export interface MerchantProfileMe {
 
 export async function getMerchantProfileMe(): Promise<MerchantProfileMe> {
   return apiRequest<MerchantProfileMe>("/users/merchant-profile/me");
+}
+
+/**
+ * Public creator-profile lookup by ID — for a merchant viewing the specific creator behind one of
+ * their applications (`RealApplication.creatorProfileId`), never the merchant's own "me" identity.
+ * Confirmed live (backend PR #37, 2026-09-18). Scoped server-side: only resolves for a creator who
+ * has an Application (any status) against one of this merchant's own Offers — a 404 here is
+ * deliberately indistinguishable between "no relationship to this creator" and "id doesn't exist
+ * at all", so callers must treat any failure as "profile not available", never fall back to
+ * another creator's data or to the caller's own profile.
+ */
+export async function getCreatorProfile(creatorProfileId: string): Promise<CreatorProfileMe> {
+  return apiRequest<CreatorProfileMe>(`/users/creator-profile/${creatorProfileId}`);
 }

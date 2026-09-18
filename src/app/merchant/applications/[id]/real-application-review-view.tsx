@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Users, TrendingUp, Radio, CheckCircle2 } from "lucide-react";
 import { Card } from "@/components/reference/ui/card";
@@ -82,9 +83,12 @@ export function RealApplicationReviewView({ applicationId }: { applicationId: st
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="font-[family-name:var(--font-heading)] text-xl font-semibold text-foreground">
+          <Link
+            href={`/merchant/creators/${application.creatorProfileId}?applicationId=${application.id}`}
+            className="font-[family-name:var(--font-heading)] text-xl font-semibold text-foreground hover:underline"
+          >
             {application.creatorName ?? "Unnamed creator"}
-          </h1>
+          </Link>
           <p className="text-sm text-muted-foreground">Applying to &ldquo;{offer?.name ?? "an offer"}&rdquo;</p>
         </div>
         <StatusBadge tone={STATUS_TONE[application.status]}>{application.status}</StatusBadge>

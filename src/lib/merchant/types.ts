@@ -72,6 +72,14 @@ export interface RealOffer {
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Backend PR #37 (2026-09-18) — merchant display info snapshotted once at Offer-creation
+   *  time (same non-live-join pattern as RealApplication's creatorX fields), not a live join to
+   *  the merchant's own profile. `businessName`, not the account holder's personal name. Offers
+   *  created before this PR shipped have both fields `null` — there was nothing to backfill
+   *  from; handle null gracefully (fallback avatar/initials, or omit the byline) rather than
+   *  treating it as a bug. */
+  merchantName: string | null;
+  merchantAvatarUrl: string | null;
 }
 
 /**
@@ -98,6 +106,10 @@ export interface RealApplication {
   creatorEngagementRate: number | null;
   creatorPlatform: string | null;
   creatorHandle: string | null;
+  /** Backend PR #37 (2026-09-18) — same snapshot-at-submission-time semantics as the other
+   *  creatorX fields above. Used as the avatar source for the merchant's creator-profile
+   *  fallback view when the live by-id lookup (getCreatorProfile) fails or hasn't run yet. */
+  creatorAvatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -98,12 +98,22 @@ export async function apiRequest<T>(
 
   let response: Response
   try {
+    // Every call here is per-user (Bearer token identifies the caller) but the URL itself is
+    // identical across users for every "me"/own-account endpoint (e.g. /users/creator-profile/me)
+    // — the request's identity lives entirely in the Authorization header, which neither the
+    // browser's HTTP cache nor an intermediate CDN cache is guaranteed to key on unless the
+    // server sends `Vary: Authorization` (it may not). Without an explicit no-store, a cached
+    // response from one user's request can legally be replayed to a different user's identical-
+    // looking GET, which is indistinguishable from a backend bug but is entirely a caching one.
+    // Forced uncachable here, once, for every caller, rather than trusted to each response's
+    // (unverified) cache-control headers.
     response = await fetch(`${baseUrl}${path}`, {
       ...rest,
       method,
       headers: finalHeaders,
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: controller.signal,
+      cache: "no-store",
     })
   } catch (cause) {
     if (controller.signal.aborted) {
