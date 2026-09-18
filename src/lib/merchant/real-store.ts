@@ -321,3 +321,21 @@ export async function disconnectShopifyAdmin(): Promise<ShopifyAdminConnectionSt
     method: "DELETE",
   });
 }
+
+export interface MerchantProfileMe {
+  id: string;
+  userId: string;
+  businessName: string;
+  category: string | null;
+  businessCategory: string | null;
+  website: string | null;
+  createdAt: string;
+  updatedAt: string;
+  name: string | null;
+  avatarUrl: string | null;
+  offersListedCount: number;
+}
+
+export async function getMerchantProfileMe(): Promise<MerchantProfileMe> {
+  return apiRequest<MerchantProfileMe>("/users/merchant-profile/me");
+}
