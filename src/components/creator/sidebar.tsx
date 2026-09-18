@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Compass, ClipboardList, Wallet, Settings, X } from "lucide-react";
+import { LayoutGrid, Compass, ClipboardList, Wallet, User, Settings, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SETTINGS_HREF = "/creator/settings";
+const PROFILE_HREF = "/creator/profile";
 
 /**
  * Playbook 05 §16's rail — same shape as components/merchant/sidebar.tsx (Playbook 04), rebuilt
@@ -53,8 +54,35 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-/** Bottom-pinned Settings entry, labeled variant — used by the mobile drawer, appended after the
- *  regular nav list with `mt-auto` pushing it to the bottom of the drawer. */
+/**
+ * Bottom-pinned Profile + Settings entries, labeled variant — used by the mobile drawer, appended
+ * after the regular nav list. Both are account-identity items (not workflow items like NAV_ITEMS),
+ * so they're pinned together at the bottom rather than living in NAV_ITEMS — `mt-auto` sits on
+ * Profile (the first of the pair) to push the whole trailing group down; Settings then follows it
+ * with the drawer's own `gap-1`. Mirrors components/merchant/sidebar.tsx's ProfileNavLink/
+ * SettingsNavLink pair.
+ */
+function ProfileNavLink({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
+  const active = pathname === PROFILE_HREF || pathname.startsWith(`${PROFILE_HREF}/`);
+  return (
+    <Link
+      href={PROFILE_HREF}
+      onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "mt-auto flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium transition-colors",
+        active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
+      )}
+    >
+      <User className="h-4 w-4" aria-hidden="true" />
+      Profile
+    </Link>
+  );
+}
+
+/** Bottom-pinned Settings entry, labeled variant — used by the mobile drawer, follows
+ *  ProfileNavLink (which carries the `mt-auto`) in the trailing account-identity group. */
 function SettingsNavLink({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const active = pathname === SETTINGS_HREF || pathname.startsWith(`${SETTINGS_HREF}/`);
@@ -64,7 +92,7 @@ function SettingsNavLink({ onNavigate }: { onNavigate?: () => void }) {
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "mt-auto flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium transition-colors",
+        "flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium transition-colors",
         active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
       )}
     >
@@ -111,7 +139,36 @@ function RailLinks() {
   );
 }
 
-/** Bottom-pinned Settings entry, icon-only variant — same tooltip treatment as RailLinks' items. */
+/** Bottom-pinned Profile entry, icon-only variant — same tooltip treatment as RailLinks' items.
+ *  Carries the `mt-auto` for the desktop rail's trailing {Profile, Settings} group. */
+function ProfileRailLink() {
+  const pathname = usePathname();
+  const active = pathname === PROFILE_HREF || pathname.startsWith(`${PROFILE_HREF}/`);
+  return (
+    <Link
+      href={PROFILE_HREF}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "group relative mt-auto flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] transition-colors",
+        active
+          ? "border-2 border-border bg-accent text-accent-foreground shadow-brutal-sm"
+          : "border-2 border-transparent text-muted-foreground hover:bg-foreground/10 hover:text-foreground",
+      )}
+    >
+      <User className="h-5 w-5" aria-hidden="true" />
+      <span className="sr-only">Profile</span>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute left-full z-20 ml-2 whitespace-nowrap rounded-[var(--radius-sm)] bg-foreground px-2.5 py-1.5 text-xs font-medium text-background opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+      >
+        Profile
+      </span>
+    </Link>
+  );
+}
+
+/** Bottom-pinned Settings entry, icon-only variant — same tooltip treatment as RailLinks' items.
+ *  Follows ProfileRailLink (which carries the `mt-auto`) in the trailing group. */
 function SettingsRailLink() {
   const pathname = usePathname();
   const active = pathname === SETTINGS_HREF || pathname.startsWith(`${SETTINGS_HREF}/`);
@@ -120,7 +177,7 @@ function SettingsRailLink() {
       href={SETTINGS_HREF}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group relative mt-auto flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] transition-colors",
+        "group relative flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] transition-colors",
         active
           ? "border-2 border-border bg-accent text-accent-foreground shadow-brutal-sm"
           : "border-2 border-transparent text-muted-foreground hover:bg-foreground/10 hover:text-foreground",
@@ -143,6 +200,7 @@ export function CreatorSidebar() {
   return (
     <nav aria-label="Creator navigation" className="hidden w-16 shrink-0 flex-col items-center gap-1 py-4 sm:flex">
       <RailLinks />
+      <ProfileRailLink />
       <SettingsRailLink />
     </nav>
   );
@@ -185,6 +243,7 @@ export function CreatorMobileNav({ open, onClose }: { open: boolean; onClose: ()
           </button>
         </div>
         <NavLinks onNavigate={onClose} />
+        <ProfileNavLink onNavigate={onClose} />
         <SettingsNavLink onNavigate={onClose} />
       </nav>
     </div>
