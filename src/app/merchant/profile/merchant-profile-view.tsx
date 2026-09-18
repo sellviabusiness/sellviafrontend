@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/reference/ui/card";
 import { Alert } from "@/components/reference/ui/alert";
-import { Skeleton } from "@/components/reference/ui/skeleton";
+import { SkeletonCard } from "@/components/reference/ui/skeleton";
 import { getMerchantProfileMe, type MerchantProfileMe } from "@/lib/merchant/real-store";
 import { ApiError } from "@/lib/api";
 
 function initials(name: string | null): string {
   if (!name) return "?";
-  return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+  return name.trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 }
 
 export function MerchantProfileView() {
@@ -24,7 +24,7 @@ export function MerchantProfileView() {
   }, []);
 
   if (error) return <Alert variant="error">{error}</Alert>;
-  if (!profile) return <Skeleton className="h-64 w-full" />;
+  if (!profile) return <SkeletonCard />;
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
