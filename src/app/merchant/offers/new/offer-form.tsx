@@ -121,7 +121,14 @@ export function OfferForm({ mode, initialOffer, onSaved }: OfferFormProps) {
       productUrl: selectedProduct?.productUrl ?? initialOffer?.productUrl ?? "",
       imageUrl: imageUrl ?? undefined,
       customerDiscountType: discountEnabled ? discountType : undefined,
-      customerDiscountValue: discountEnabled ? Number(discountValue) : undefined,
+      // Percentage points if "percentage", but CENTS if "fixed_amount" (real-store.ts's own doc
+      // comment on customerDiscountValue) — same units conversion priceCents does above, easy to
+      // miss since the field is otherwise a plain passthrough number.
+      customerDiscountValue: discountEnabled
+        ? discountType === "fixed_amount"
+          ? Math.round(Number(discountValue) * 100)
+          : Number(discountValue)
+        : undefined,
       productProvided: productProvided || undefined,
       productReturnRequired: productProvided ? productReturnRequired : undefined,
       returnWindowDays: returnWindowNum,
@@ -141,6 +148,10 @@ export function OfferForm({ mode, initialOffer, onSaved }: OfferFormProps) {
   }
 
   const filteredProducts = products?.filter((p) => p.name.toLowerCase().includes(productSearch.toLowerCase())) ?? [];
+  // create mode with a loaded, empty catalog: the picker renders only the "add one first" link
+  // (no search/grid), so the rest of the form has nothing to submit against — disable Submit
+  // rather than let the user fill it all in and hit a silent "Pick a product." validation error.
+  const noProductsAvailable = mode === "create" && products !== null && products.length === 0;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
@@ -276,7 +287,7 @@ export function OfferForm({ mode, initialOffer, onSaved }: OfferFormProps) {
         )}
       </Card>
 
-      <Button type="submit" className="w-full" loading={submitting}>
+      <Button type="submit" className="w-full" loading={submitting} disabled={noProductsAvailable}>
         {mode === "create" ? "Save offer" : "Save changes"}
       </Button>
     </form>
